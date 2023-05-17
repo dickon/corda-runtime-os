@@ -263,6 +263,7 @@ class DBProcessorImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
+        log.info("Stopping the DB Processor!")
         reconcilers.stop()
     }
 

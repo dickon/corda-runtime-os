@@ -60,6 +60,7 @@ class DbReconcilerReader<K : Any, V : Any>(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator,
     ) {
+        logger.info("Changing status to ${event.status}")
         coordinator.updateStatus(event.status)
     }
 
