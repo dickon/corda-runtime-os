@@ -100,6 +100,7 @@ include 'components:crypto:crypto-softhsm-impl'
 include 'components:db:db-connection-manager'
 include 'components:db:db-connection-manager-impl'
 include 'components:domino-logic'
+include 'components:evm-connector'
 include 'components:external-messaging-services'
 include 'components:flow:flow-mapper-service'
 include 'components:flow:flow-p2p-filter-service'
@@ -371,6 +372,7 @@ include 'processors:member-processor'
 include 'processors:rest-processor'
 include 'processors:uniqueness-processor'
 include 'processors:verification-processor'
+include 'processors:evm-connector-processor'
 include 'simulator:api'
 include 'simulator:example-app'
 include 'simulator:runtime'
@@ -517,3 +519,8 @@ gradleEnterprise {
         }
     }
 }
+include 'processors:evm-connector-processor'
+findProject(':processors:evm-connector-processor')?.name = 'evm-connector-processor'
+include 'components:evm-connector'
+findProject(':components:evm-connector')?.name = 'evm-connector'
+

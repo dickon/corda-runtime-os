@@ -1,0 +1,76 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'EVM connector component'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
+//    implementation "net.corda:corda-crypto"
+//    api project(":libs:messaging:messaging")
+//    api project(":libs:lifecycle:lifecycle")
+//    api project(":components:configuration:configuration-read-service")
+//    api project(':components:domino-logic')
+//    api project(':libs:crypto:delegated-signing')
+//    implementation project(":libs:cache:cache-caffeine")
+//    implementation project(":components:crypto:crypto-client")
+//    implementation project(':libs:crypto:crypto-core')
+//    implementation project(":libs:crypto:crypto-utils")
+//    implementation project(":libs:utilities")
+//
+//    implementation "com.typesafe:config:$typeSafeConfigVersion"
+//    implementation "io.netty:netty-codec-http:$nettyVersion"
+//    implementation "commons-validator:commons-validator:$commonsVersion"
+//    implementation "com.github.ben-manes.caffeine:caffeine:$caffeineVersion"
+//    implementation project(':libs:schema-registry:schema-registry')
+//    implementation project(":libs:metrics")
+
+    implementation "org.web3j:core:$web3jVersion"
+    implementation "org.web3j:utils:$web3jVersion"
+//    implementation "org.web3j:crypto:$web3jVersion"
+//
+//    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+//    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+//    testImplementation project(":testing:test-utilities")
+//    integrationTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+//    integrationTestImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
+//    integrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
+//    integrationTestImplementation "net.corda:corda-avro-schema"
+
+    // For async logging
+    integrationTestRuntimeOnly "com.lmax:disruptor:$disruptorVersion"
+    integrationTestRuntimeOnly 'org.osgi:osgi.core'
+
+//    integrationTestImplementation project(':libs:crypto:certificate-generation')
+//    integrationTestImplementation project(":libs:lifecycle:lifecycle-impl")
+//    integrationTestImplementation project(":libs:lifecycle:registry")
+//    integrationTestImplementation project(":components:configuration:configuration-read-service-impl")
+//    integrationTestImplementation project(":libs:configuration:configuration-core")
+//    integrationTestImplementation project(":libs:configuration:configuration-merger")
+//    integrationTestImplementation project(':libs:crypto:cipher-suite')
+//    integrationTestImplementation project(':libs:messaging:message-bus')
+//    integrationTestImplementation project(':libs:messaging:db-message-bus-impl')
+//    integrationTestImplementation project(":testing:p2p:inmemory-messaging-impl")
+//    testImplementation project(":testing:p2p:certificates")
+}
+
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.named('integrationTest') {
+    final String hostsFilePath = new File(project.sourceSets["integrationTest"].output.resourcesDir.absolutePath, "hosts").absolutePath
+    jvmArgs "-Djdk.net.hosts.file=$hostsFilePath"
+}
