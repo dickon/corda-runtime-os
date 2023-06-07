@@ -1,7 +1,7 @@
 package net.corda.crypto.softhsm.impl.infra
 
 import net.corda.crypto.core.ShortHash
-import net.corda.crypto.persistence.SigningKeyInfo
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.softhsm.SigningRepository
