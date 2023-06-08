@@ -3,9 +3,6 @@ package net.corda.crypto.service.impl.infra
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
 import net.corda.cache.caffeine.CacheFactoryImpl
-import java.security.KeyPairGenerator
-import java.security.Provider
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
@@ -16,8 +13,6 @@ import net.corda.crypto.cipher.suite.GeneratedWrappedKey
 import net.corda.crypto.cipher.suite.KeyGenerationSpec
 import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
-import net.corda.crypto.cipher.suite.SigningWrappedSpec
-import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
@@ -35,7 +30,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.test.impl.TestLifecycleCoordinatorFactoryImpl
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
-import net.corda.v5.crypto.SignatureSpec
+import java.security.KeyPairGenerator
+import java.security.Provider
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
@@ -50,8 +46,6 @@ class TestServicesFactory {
         const val CUSTOM1_HSM_ID = "CUSTOM1"
         const val CUSTOM2_HSM_ID = "CUSTOM2"
     }
-
-    val recordedCryptoContexts = ConcurrentHashMap<String, Map<String, String>>()
 
     val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     val emptyConfig: SmartConfig = configFactory.create(ConfigFactory.empty())
@@ -165,26 +159,23 @@ class TestServicesFactory {
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
 
     val cryptoService: CryptoService by lazy {
-        CryptoServiceWrapper(
-            SoftCryptoService(
-                wrappingRepositoryFactory = { cryptoWrappingRepository },
-                schemeMetadata = schemeMetadata,
-                defaultUnmanagedWrappingKeyName = "test",
-                unmanagedWrappingKeys = mapOf( "test" to rootWrappingKey),
-                digestService = PlatformDigestServiceImpl(schemeMetadata),
-                wrappingKeyCache = null,
-                privateKeyCache = null,
-                keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
-                    KeyPairGenerator.getInstance(algorithm, provider)
-                },
-                wrappingKeyFactory = {
-                    WrappingKeyImpl.generateWrappingKey(it)
-                },
-                signingRepositoryFactory =  {
-                    signingRepository
-                }
-            ),
-            recordedCryptoContexts
+        SoftCryptoService(
+            wrappingRepositoryFactory = { cryptoWrappingRepository },
+            schemeMetadata = schemeMetadata,
+            defaultUnmanagedWrappingKeyName = "test",
+            unmanagedWrappingKeys = mapOf("test" to rootWrappingKey),
+            digestService = PlatformDigestServiceImpl(schemeMetadata),
+            wrappingKeyCache = null,
+            privateKeyCache = null,
+            keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
+                KeyPairGenerator.getInstance(algorithm, provider)
+            },
+            wrappingKeyFactory = {
+                WrappingKeyImpl.generateWrappingKey(it)
+            },
+            signingRepositoryFactory = {
+                signingRepository
+            }
         )
     }
 
