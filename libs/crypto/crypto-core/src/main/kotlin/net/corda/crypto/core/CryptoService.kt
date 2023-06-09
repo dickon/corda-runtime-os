@@ -286,7 +286,7 @@ interface CryptoService {
         externalId: String? = null,
         scheme: KeyScheme,
         context: Map<String, String> = EMPTY_CONTEXT,
-    ): PublicKey
+    ): GeneratedWrappedKey
 
     /**
      * Generates a new random [KeyPair] and adds it to the internal key storage.
