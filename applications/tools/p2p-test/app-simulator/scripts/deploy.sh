@@ -16,6 +16,7 @@ deploy() {
      oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
      --set image.registry="corda-os-docker.software.r3.com" \
      --set kafka.replicaCount=$KAFKA_REPLICAS,kafka.zookeeper.replicaCount=$KAFKA_ZOOKEEPER_REPLICAS \
+     --set kafka.persistence.size=100Gi \
      -f prereqs-eks.yaml \
      --render-subchart-notes \
      --timeout 10m \
@@ -25,6 +26,7 @@ deploy() {
    helm upgrade --install corda -n $namespace oci://corda-os-docker.software.r3.com/helm-charts/release/os/5.0/corda \
      --set "imagePullSecrets={docker-registry-cred}" --set image.tag=$DOCKER_IMAGE_VERSION \
      --set image.registry="corda-os-docker.software.r3.com" --values $REPO_TOP_LEVEL_DIR/values.yaml \
+     --set bootstrap.kafka.partitions=KAFKA_PARTITIONS --set bootstrap.kafka.replicas=KAFKA_REPLICATION_FACTOR \
      -f corda-eks.yaml \
      --values $REPO_TOP_LEVEL_DIR/debug.yaml --wait --version $CORDA_CHART_VERSION
 }

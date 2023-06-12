@@ -10,7 +10,7 @@ CORDA_VERSION=5.1.0.0
 if [ -z $DOCKER_IMAGE_VERSION ]; then
   DOCKER_IMAGE_VERSION=$(curl -u $CORDA_ARTIFACTORY_USERNAME:$CORDA_ARTIFACTORY_PASSWORD  https://corda-os-docker-unstable.software.r3.com:/v2/corda-os-p2p-link-manager-worker/tags/list | jq -r -M '.["tags"] | map(select(contains("'$CORDA_VERSION'-beta"))) | sort | reverse | .[0]')
 fi
-DOCKER_IMAGE_VERSION=5.1.0.0-alpha-1685021673852 #TODO revert
+#DOCKER_IMAGE_VERSION=5.1.0.0-alpha-1685021673852
 
 # Uncomment to enable mutual TLS
 # MTLS="Y"
@@ -31,6 +31,8 @@ APP_SIMULATOR_DB_NAMESPACE=$NAMESPACE_PREFIX-db
 #KAFKA Settings
 KAFKA_REPLICAS=1
 KAFKA_ZOOKEEPER_REPLICAS=1
+KAFKA_PARTITIONS=10
+KAFKA_REPLICATION_FACTOR=3
 
 # RPC PORTS
 A_RPC_PORT=8888

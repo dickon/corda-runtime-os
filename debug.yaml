@@ -11,6 +11,8 @@
 #  --wait
 #
 workers:
+  p2pLinkManager:
+    replicaCount: 1
   crypto:
     replicaCount: 1
 #    debug:
