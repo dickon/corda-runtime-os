@@ -36,7 +36,7 @@ class TestSigningRepository: SigningRepository {
             category = context.category,
             alias = context.alias,
             hsmAlias = null,
-            publicKey = encodedKey,
+            publicKey = context.key.publicKey,
             keyMaterial = context.key.keyMaterial,
             schemeCodeName = context.keyScheme.codeName,
             wrappingKeyAlias = context.wrappingKeyAlias,

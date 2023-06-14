@@ -1,21 +1,21 @@
 package net.corda.crypto.service.impl.infra
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.typesafe.config.ConfigFactory
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
-import net.corda.crypto.cipher.suite.CryptoServiceExtensions
-import net.corda.crypto.cipher.suite.GeneratedWrappedKey
-import net.corda.crypto.cipher.suite.KeyGenerationSpec
-import net.corda.crypto.cipher.suite.SharedSecretSpec
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoService
+import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.core.aes.WrappingKeyImpl
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -33,6 +33,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.Provider
+import java.security.PublicKey
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 
@@ -162,6 +164,11 @@ class TestServicesFactory {
     val association = mock<HSMAssociationInfo> {
         on { masterKeyAlias }.thenReturn("second")
     }
+    val signingKeyInfoCache: Cache<PublicKey, SigningKeyInfo> = CacheFactoryImpl().build(
+        "test private key cache", Caffeine.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.MINUTES)
+            .maximumSize(3)
+    )
     val cryptoService: CryptoService by lazy {
         SoftCryptoService(
             wrappingRepositoryFactory = { wrappingRepository },
@@ -180,7 +187,7 @@ class TestServicesFactory {
             signingRepositoryFactory = {
                 signingRepository
             },
-            signingKeyInfoCache = mock(),
+            signingKeyInfoCache = signingKeyInfoCache,
             // would like to use makeHSMStore in the crypto-softhsm-impl project but
             // don't want the extra dependency
             hsmStore = mock<HSMStore> {
@@ -194,48 +201,7 @@ class TestServicesFactory {
         HSMServiceImpl(hsmStore, cryptoService)
     }
 
-    private class CryptoServiceWrapper(
-        private val impl: CryptoService,
-        private val recordedCryptoContexts: ConcurrentHashMap<String, Map<String, String>>
-    ) : CryptoService {
-        override val extensions: List<CryptoServiceExtensions> get() = impl.extensions
-
-        override val supportedSchemes: Map<KeyScheme, List<SignatureSpec>> get() = impl.supportedSchemes
-
-        override fun createWrappingKey(wrappingKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
-            if (context.containsKey("ctxTrackingId")) {
-                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
-            }
-            impl.createWrappingKey(wrappingKeyAlias, failIfExists, context)
-        }
-
-        override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedWrappedKey {
-            if (context.containsKey("ctxTrackingId")) {
-                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
-            }
-            return impl.generateKeyPair(spec, context)
-        }
-
-        override fun sign(spec: SigningWrappedSpec, data: ByteArray, context: Map<String, String>): ByteArray {
-            if (context.containsKey("ctxTrackingId")) {
-                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
-            }
-            return impl.sign(spec, data, context)
-        }
-
-        override fun delete(alias: String, context: Map<String, String>): Boolean {
-            if (context.containsKey("ctxTrackingId")) {
-                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
-            }
-            return impl.delete(alias, context)
-        }
-
-        override fun deriveSharedSecret(spec: SharedSecretSpec, context: Map<String, String>): ByteArray {
-            if (context.containsKey("ctxTrackingId")) {
-                recordedCryptoContexts[context.getValue("ctxTrackingId")] = context
-            }
-            return impl.deriveSharedSecret(spec, context)
-        }
+    val keyEncodingService = mock<KeyEncodingService> {
     }
 }
 
