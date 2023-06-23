@@ -19,6 +19,7 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:utilities')
+    implementation project(':libs:membership:locally-hosted-identities-service')
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:crypto:crypto-hes')
@@ -32,7 +33,6 @@ dependencies {
     implementation project(':components:membership:synchronisation')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:membership:locally-hosted-identities-service')
     implementation project(':components:membership:members-client-certificate-publisher-service')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -61,7 +61,7 @@ dependencies {
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
-    runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
+    runtimeOnly project(':libs:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
