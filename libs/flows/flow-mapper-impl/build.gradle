@@ -15,6 +15,7 @@ dependencies {
     implementation project(":libs:metrics")
     implementation project(':libs:utilities')
     implementation project(":libs:serialization:serialization-avro")
+    implementation project(":libs:membership:locally-hosted-identities-service")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
