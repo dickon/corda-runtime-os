@@ -53,7 +53,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             sessionPayload,
                             state,
                             sessionEventSerializer,
-                            flowConfig
+                            flowConfig,
+                            locallyHostedIdentitiesService
                         )
                     }
                     is SessionError -> {
@@ -64,7 +65,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             instant,
                             sessionEventSerializer,
                             ::generateAppMessage,
-                            flowConfig
+                            flowConfig,
+                            locallyHostedIdentitiesService
                         )
                     }
                     else -> {
@@ -75,7 +77,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             instant,
                             sessionEventSerializer,
                             ::generateAppMessage,
-                            flowConfig
+                            flowConfig,
+                            locallyHostedIdentitiesService
                         )
                     }
                 }

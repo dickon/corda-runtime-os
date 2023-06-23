@@ -12,6 +12,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -24,7 +25,8 @@ class SessionErrorExecutor(
     private val instant: Instant,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
-    private val flowConfig: SmartConfig
+    private val flowConfig: SmartConfig,
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ) : FlowMapperEventExecutor {
 
     private companion object {

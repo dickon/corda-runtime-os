@@ -10,6 +10,7 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
@@ -23,6 +24,7 @@ class SessionInitExecutor(
     private val flowMapperState: FlowMapperState?,
     private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
     private val flowConfig: SmartConfig,
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ) : FlowMapperEventExecutor {
 
     private companion object {
