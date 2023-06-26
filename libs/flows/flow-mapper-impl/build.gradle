@@ -16,6 +16,8 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(":libs:serialization:serialization-avro")
     implementation project(":libs:membership:locally-hosted-identities-service")
+    implementation project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:lifecycle:lifecycle")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
