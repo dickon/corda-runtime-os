@@ -75,10 +75,8 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                             flowMapperEventPayload,
                             state,
                             instant,
-                            sessionEventSerializer,
                             ::generateAppMessage,
                             flowConfig,
-                            locallyHostedIdentitiesService
                         )
                     }
                 }
