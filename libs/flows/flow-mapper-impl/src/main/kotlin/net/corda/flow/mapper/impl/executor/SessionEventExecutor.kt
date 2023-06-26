@@ -1,8 +1,6 @@
 package net.corda.flow.mapper.impl.executor
 
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
@@ -10,13 +8,10 @@ import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
-import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -26,19 +21,14 @@ class SessionEventExecutor(
     private val sessionEvent: SessionEvent,
     private val flowMapperState: FlowMapperState?,
     private val instant: Instant,
-    private val sessionEventSerializer: CordaAvroSerializer<SessionEvent>,
-    private val appMessageFactory: (SessionEvent, CordaAvroSerializer<SessionEvent>, SmartConfig) -> AppMessage,
     private val flowConfig: SmartConfig,
-    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
     private val recordFactory: RecordFactory
     ) : FlowMapperEventExecutor {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-
     private val messageDirection = sessionEvent.messageDirection
-    private val outputTopic = getSessionEventOutputTopic(messageDirection)
 
     override fun execute(): FlowMapperResult {
         return if (flowMapperState == null) {
@@ -50,6 +40,7 @@ class SessionEventExecutor(
 
     private fun handleNullState(): FlowMapperResult {
         val sessionId = sessionEvent.sessionId
+        val eventPayload = sessionEvent.payload
 
         val errEvent = SessionEvent(
             MessageDirection.INBOUND,
@@ -68,21 +59,6 @@ class SessionEventExecutor(
             )
         )
 
-        val ackEvent = SessionEvent(
-            MessageDirection.INBOUND,
-            instant,
-            toggleSessionId(sessionEvent.sessionId),
-            null,
-            sessionEvent.initiatingIdentity,
-            sessionEvent.initiatedIdentity,
-            sessionEvent.sequenceNum,
-            emptyList(),
-            SessionAck()
-        )
-
-
-        val eventPayload = sessionEvent.payload
-
         return if (eventPayload !is SessionError) {
             log.warn(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
@@ -90,21 +66,7 @@ class SessionEventExecutor(
             )
             FlowMapperResult(
                 null, listOf(
-                    recordFactory.makeRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig)
-                    createP2PRecord(
-                        sessionEvent,
-                        SessionError(
-                            ExceptionEnvelope(
-                                "FlowMapper-SessionExpired",
-                                "Tried to process session event for expired session with sessionId $sessionId"
-                            )
-                        ),
-                        instant,
-                        sessionEventSerializer,
-                        appMessageFactory,
-                        flowConfig,
-                        0
-                    )
+                    recordFactory.makeRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig, errEvent)
                 )
             )
         } else {
@@ -120,6 +82,18 @@ class SessionEventExecutor(
      * Output the session event to the correct topic and key
      */
     private fun processOtherSessionEvents(flowMapperState: FlowMapperState, instant: Instant): FlowMapperResult {
+        val ackEvent = SessionEvent(
+            MessageDirection.INBOUND,
+            instant,
+            toggleSessionId(sessionEvent.sessionId),
+            null,
+            sessionEvent.initiatingIdentity,
+            sessionEvent.initiatedIdentity,
+            sessionEvent.sequenceNum,
+            emptyList(),
+            SessionAck()
+        )
+
         val errorMsg = "Flow mapper received error event from counterparty for session which does not exist. " +
                 "Session may have expired. Key: $eventKey, Event: $sessionEvent. "
 
@@ -134,31 +108,19 @@ class SessionEventExecutor(
                     FlowMapperResult(flowMapperState, listOf())
                 } else {
                     if (sessionEvent.payload is SessionClose) {
-                        val outputRecord =
-                            createP2PRecord(
-                                sessionEvent,
-                                SessionAck(),
-                                instant,
-                                sessionEventSerializer,
-                                appMessageFactory,
-                                flowConfig
+                        FlowMapperResult(
+                            flowMapperState, listOf(
+                                recordFactory.makeRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig, ackEvent)
                             )
-                        FlowMapperResult(flowMapperState, listOf(outputRecord))
+                        )
                     } else {
                         FlowMapperResult(flowMapperState, listOf())
                     }
                 }
             }
+
             FlowMapperStateType.OPEN -> {
-                val outputRecord = if (messageDirection == MessageDirection.OUTBOUND) {
-                    Record(
-                        outputTopic,
-                        sessionEvent.sessionId,
-                        appMessageFactory(sessionEvent, sessionEventSerializer, flowConfig)
-                    )
-                } else {
-                    Record(outputTopic, flowMapperState.flowId, FlowEvent(flowMapperState.flowId, sessionEvent))
-                }
+                val outputRecord = recordFactory.makeRecord(eventKey, sessionEvent, flowMapperState, instant, flowConfig, sessionEvent)
                 FlowMapperResult(flowMapperState, listOf(outputRecord))
             }
             FlowMapperStateType.ERROR -> {
