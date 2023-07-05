@@ -33,7 +33,6 @@ class CryptoServiceRefUtilsTests {
             tenantId = UUID.randomUUID().toString(),
             category = CryptoConsts.Categories.LEDGER,
             masterKeyAlias = UUID.randomUUID().toString(),
-            hsmId = UUID.randomUUID().toString(),
             instance = mock()
         )
         val generatedKey = GeneratedWrappedKey(
