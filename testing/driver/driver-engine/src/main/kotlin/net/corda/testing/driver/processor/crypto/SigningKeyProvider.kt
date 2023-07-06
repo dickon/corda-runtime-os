@@ -1,4 +1,4 @@
-package net.corda.testing.driver.crypto
+package net.corda.testing.driver.processor.crypto
 
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -9,6 +9,7 @@ import java.util.Collections.singletonList
 import java.util.Collections.unmodifiableMap
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.sha256Bytes
+import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.fullId
@@ -27,6 +28,7 @@ import net.corda.testing.driver.sandbox.CORDA_MEMBER_X500_NAME
 import net.corda.testing.driver.sandbox.CORDA_TENANT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_COUNT
 import net.corda.testing.driver.sandbox.CORDA_TENANT_MEMBER
+import net.corda.testing.driver.sandbox.WRAPPING_KEY_ALIAS
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -71,13 +73,13 @@ class SigningKeyProvider @Activate constructor(
                                 id = calculateHash(publicKey),
                                 fullId = parseSecureHash(publicKey.fullId()),
                                 tenantId = "",
-                                category = "",
+                                category = LEDGER,
                                 alias = alias,
                                 hsmAlias = null,
                                 publicKey = publicKey.encoded,
                                 keyMaterial = privateKeyMaterial,
                                 schemeCodeName = keyScheme.codeName,
-                                masterKeyAlias = "master",
+                                wrappingKeyAlias = WRAPPING_KEY_ALIAS,
                                 externalId = null,
                                 encodingVersion = 1,
                                 timestamp = Instant.now(),
@@ -118,7 +120,7 @@ class SigningKeyProvider @Activate constructor(
                     publicKey = cached.publicKey,
                     keyMaterial = cached.keyMaterial,
                     schemeCodeName = cached.schemeCodeName,
-                    masterKeyAlias = cached.masterKeyAlias,
+                    wrappingKeyAlias = cached.wrappingKeyAlias,
                     externalId = cached.externalId,
                     encodingVersion = cached.encodingVersion,
                     timestamp = cached.timestamp,
@@ -140,7 +142,7 @@ class SigningKeyProvider @Activate constructor(
                     cached.hsmAlias,
                     ByteBuffer.wrap(cached.publicKey).asReadOnlyBuffer(),
                     cached.schemeCodeName,
-                    cached.masterKeyAlias,
+                    cached.wrappingKeyAlias,
                     cached.encodingVersion,
                     cached.externalId,
                     cached.timestamp
