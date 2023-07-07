@@ -504,7 +504,7 @@ workers:
       override: ""
     profiling:
       # -- run DB worker with profiling enabled
-      enabled: false
+      enabled: true
 
     # resource limits and requests configuration for the DB worker containers.
     resources:
