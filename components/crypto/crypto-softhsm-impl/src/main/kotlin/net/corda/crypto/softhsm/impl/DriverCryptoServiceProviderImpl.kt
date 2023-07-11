@@ -24,7 +24,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @Suppress("unused")
 @Component(
     service = [ CryptoServiceProvider::class, PrivateKeyService::class ],
-    configurationPid = [ "net.corda.testing.driver.sandbox.LocalIdentity" ],
+    configurationPid = [ "net.corda.testing.driver.sandbox.Membership" ],
     configurationPolicy = REQUIRE,
     property = [ "corda.driver:Boolean=true" ]
 )

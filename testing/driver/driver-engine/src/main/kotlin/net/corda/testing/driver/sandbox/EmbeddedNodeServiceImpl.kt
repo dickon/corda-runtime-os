@@ -1,9 +1,8 @@
 package net.corda.testing.driver.sandbox
 
 import java.net.URI
-import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.KeyPair
-import java.security.PublicKey
 import java.time.Duration
 import java.util.Collections.unmodifiableSet
 import java.util.Hashtable
@@ -24,8 +23,8 @@ import net.corda.testing.driver.DriverConstants.DRIVER_SERVICE_FILTER
 import net.corda.testing.driver.node.EmbeddedNodeService
 import net.corda.testing.driver.sandbox.VirtualNodeLoader.Companion.VNODE_LOADER_NAME
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
+import org.osgi.framework.Constants.FRAMEWORK_STORAGE
 import org.osgi.service.cm.ConfigurationAdmin
 import org.osgi.service.component.ComponentConstants.COMPONENT_NAME
 import org.osgi.service.component.ComponentContext
@@ -130,18 +129,19 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         logger.info("Shutdown complete")
     }
 
-    override fun configure(frameworkDirectory: Path, timeout: Duration) {
+    override fun configure(timeout: Duration) {
         // We are replacing these Corda services with our own versions.
         REPLACEMENT_SERVICES.forEach(::disableNonDriverServices)
 
+        val bundleContext = componentContext.bundleContext
+        val frameworkDirectory = Paths.get(bundleContext.getProperty(FRAMEWORK_STORAGE)).toAbsolutePath()
         configAdmin.getConfiguration(CpiLoader.COMPONENT_NAME)?.also { config ->
             val properties = Hashtable<String, Any?>()
-            properties[CpiLoader.FRAMEWORK_DIRECTORY_KEY] = frameworkDirectory.toString()
             properties[CpiLoader.CACHE_DIRECTORY_KEY] = frameworkDirectory.parent.resolve(DRIVER_CACHE_NAME).toString()
             config.update(properties)
         }
 
-        val (publicBundles, privateBundles) = componentContext.bundleContext.bundles.partition { bundle ->
+        val (publicBundles, privateBundles) = bundleContext.bundles.partition { bundle ->
             bundle.symbolicName in PLATFORM_PUBLIC_BUNDLE_NAMES
         }
         sandboxCreator.createPublicSandbox(publicBundles, privateBundles)
@@ -181,49 +181,18 @@ class EmbeddedNodeServiceImpl @Activate constructor(
         }
     }
 
-    override fun setMembershipGroup(network: Map<MemberX500Name, PublicKey>) {
-        configAdmin.getConfiguration(CORDA_MEMBERSHIP_PID)?.also { config ->
+    override fun setMembershipGroup(network: Map<MemberX500Name, KeyPair>) {
+        configAdmin.getConfiguration(CORDA_MEMBERSHIP_PID, "?")?.also { config ->
             val properties = Hashtable<String, Any>()
             properties[CORDA_MEMBER_COUNT] = network.size
             network.entries.forEachIndexed { idx, entry ->
                 properties["$CORDA_MEMBER_X500_NAME.$idx"] = entry.key.toString()
-                properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] = entry.value.encoded
-            }
-            config.update(properties)
-        }
-    }
-
-    override fun setLocalIdentities(localMembers: Set<MemberX500Name>, localKeys: Map<MemberX500Name, KeyPair>) {
-        configAdmin.getConfiguration(CORDA_LOCAL_IDENTITY_PID, "?")?.also { config ->
-            val properties = Hashtable<String, Any>()
-            properties[CORDA_MEMBER_COUNT] = localMembers.size
-            localMembers.forEachIndexed { idx, localMember ->
-                properties["$CORDA_MEMBER_X500_NAME.$idx"] = localMember.toString()
-                localKeys[localMember]?.also { keyPair ->
+                entry.value.also { keyPair ->
                     properties["$CORDA_MEMBER_PRIVATE_KEY.$idx"] = keyPair.private.encoded
                     properties["$CORDA_MEMBER_PUBLIC_KEY.$idx"] = keyPair.public.encoded
                 }
             }
             config.update(properties)
-        }
-    }
-
-    override fun configureLocalTenants(timeout: Duration) {
-        val localTenants = serviceFactory.getService(VirtualNodeInfoReadService::class.java, VNODE_LOADER_FILTER, timeout).getAll()
-            .map(net.corda.virtualnode.VirtualNodeInfo::holdingIdentity)
-            .associate { hid ->
-                hid.shortHash.value to hid.x500Name
-            }
-        if (localTenants.isNotEmpty()) {
-            configAdmin.getConfiguration(CORDA_LOCAL_TENANCY_PID, "?")?.also { config ->
-                val properties = Hashtable<String, Any>()
-                properties[CORDA_TENANT_COUNT] = localTenants.size
-                localTenants.entries.forEachIndexed { idx, entry ->
-                    properties["$CORDA_TENANT.$idx"] = entry.key
-                    properties["$CORDA_TENANT_MEMBER.$idx"] = entry.value.toString()
-                }
-                config.update(properties)
-            }
         }
     }
 }
