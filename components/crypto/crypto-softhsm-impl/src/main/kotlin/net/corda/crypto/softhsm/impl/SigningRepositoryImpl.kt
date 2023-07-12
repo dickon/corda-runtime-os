@@ -13,7 +13,6 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.SigningKeyFilterMapImpl
 import net.corda.crypto.core.SigningKeyInfo
 import net.corda.crypto.persistence.SigningKeyOrderBy
-import net.corda.crypto.persistence.SigningKeyStatus
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.crypto.persistence.alias
 import net.corda.crypto.persistence.category
@@ -37,6 +36,7 @@ import java.time.Instant
 import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.crypto.core.SigningKeyStatus
 
 @Suppress("LongParameterList")
 class SigningRepositoryImpl(
@@ -227,15 +227,19 @@ class SigningRepositoryImpl(
 }
 
 
-fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager): SigningKeyInfo {
-    val signingKeyMaterialEntity = checkNotNull(em.createQuery(
-        "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
-        SigningKeyMaterialEntity::class.java
-    ).setParameter("signingKeyId", id)
-        .resultList.singleOrNull()) { "private key material for $id not found"}
-    val wrappingKey = checkNotNull(em.createQuery(
-        "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
-    ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()) { 
+fun SigningKeyEntity.joinSigningKeyInfo(em: EntityManager, keyEncodingService: KeyEncodingService): SigningKeyInfo {
+    val signingKeyMaterialEntity = checkNotNull(
+        em.createQuery(
+            "FROM ${SigningKeyMaterialEntity::class.java.simpleName} WHERE signingKeyId=:signingKeyId",
+            SigningKeyMaterialEntity::class.java
+        ).setParameter("signingKeyId", id)
+            .resultList.singleOrNull()
+    ) { "private key material for $id not found" }
+    val wrappingKey = checkNotNull(
+        em.createQuery(
+            "FROM WrappingKeyEntity WHERE id=:wrappingKeyId", WrappingKeyEntity::class.java
+        ).setParameter("wrappingKeyId", signingKeyMaterialEntity.wrappingKeyId).resultList.singleOrNull()
+    ) {
         "wrapping key for $id not found"
     }
 

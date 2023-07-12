@@ -259,7 +259,7 @@ open class SoftCryptoService(
             ).also { key ->
                 val saveContext = SigningWrappedKeySaveContext(
                     key = key,
-                    masterKeyAlias = parentKeyAlias,
+                    wrappingKeyAlias = parentKeyAlias,
                     externalId = externalId,
                     alias = alias,
                     keyScheme = scheme,
@@ -537,9 +537,7 @@ open class SoftCryptoService(
         tenantId: String,
     ): KeyMaterialSpec {
         val keyMaterial: ByteArray = record.data.keyMaterial
-        val masterKeyAlias = record.data.masterKeyAlias ?: throw IllegalStateException(
-            "The master key alias for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
-        )
+        val masterKeyAlias = record.data.wrappingKeyAlias
         val encodingVersion = record.data.encodingVersion ?: throw IllegalStateException(
             "The encoding version for public key ${publicKey.publicKeyId()} of tenant $tenantId must be specified, but is null"
         )

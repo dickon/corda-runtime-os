@@ -81,7 +81,7 @@ data class SigningKeyInfo(
         this.hsmAlias,
         ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.publicKey)),
         this.schemeCodeName,
-        this.masterKeyAlias,
+        this.wrappingKeyAlias,
         this.encodingVersion,
         this.externalId,
         this.timestamp
