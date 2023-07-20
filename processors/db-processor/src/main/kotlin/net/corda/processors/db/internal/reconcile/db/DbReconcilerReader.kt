@@ -78,6 +78,7 @@ class DbReconcilerReader<K : Any, V : Any>(
                 doGetAllVersionedRecords(context).onClose {
                     // This class only have access to this em and transaction. This is a read only transaction,
                     // only used for making streaming DB data possible.
+                    logger.info("CONAL - versioned records stream onClose handler called, rolling back tx and closing context: $context")
                     currentTransaction.rollback()
                     context.close()
                 }

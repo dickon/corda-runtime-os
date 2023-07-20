@@ -116,8 +116,10 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
 
-        val toBeReconciledDbRecords =
-            dbReader.getAllVersionedRecords()?.filter { dbRecord ->
+        // note cs - this line involves creating an entityManager,
+        var reconciledCount = 0
+        dbReader.getAllVersionedRecords()?.use {
+            it.filter { dbRecord ->
                 val matchedKafkaRecord = kafkaRecords[dbRecord.key]
                 val toBeReconciled = if (matchedKafkaRecord == null) {
                     !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
@@ -131,12 +133,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 }
 
                 toBeReconciled
-            }
-                ?: throw ReconciliationException("Error occurred while retrieving db records")
-
-        var reconciledCount = 0
-        toBeReconciledDbRecords.use {
-            it.forEach { dbRecord ->
+            }.forEach { dbRecord ->
                 if (dbRecord.isDeleted) {
                     writer.remove(dbRecord.key)
                 } else {
@@ -145,9 +142,36 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 reconciledCount++
             }
         }
+            ?: throw ReconciliationException("Error occurred while retrieving db records")
 
         return reconciledCount
     }
+
+    /**
+     * 6min30
+     * Allocated All Pools: 348 MB
+     * Used Metaspace: 192 MB
+     * Used CodeHeap 'profiled nmethods': 73 MB
+     * Used CodeHeap 'non-profiled nmethods': 37 MB
+     * Used Compressed Class Space: 17 MB
+     * Used CodeHeap 'non-nmethods': 1.7 MB
+     *
+     * 7min30
+     * Allocated All Pools: 350 MB
+     * Used Metaspace: 193 MB
+     * Used CodeHeap 'profiled nmethods': 74 MB
+     * Used CodeHeap 'non-profiled nmethods': 37 MB
+     * Used Compressed Class Space: 17 MB
+     * Used CodeHeap 'non-nmethods': 1.7 MB
+     *
+     * 20min10
+     * Allocated All Pools: 363 MB
+     * Used Metaspace: 203 MB
+     * Used CodeHeap 'profiled nmethods': 74 MB
+     * Used CodeHeap 'non-profiled nmethods': 39 MB
+     * Used Compressed Class Space: 18 MB
+     * Used CodeHeap 'non-nmethods': 1.7 MB
+     */
 
     private fun scheduleNextReconciliation(coordinator: LifecycleCoordinator) {
         logger.debug { "Registering new ${ReconcileEvent::class.simpleName}" }

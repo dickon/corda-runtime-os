@@ -84,7 +84,9 @@ class EntityManagerFactoryFactoryImpl(
             // TODO - statistics integration isn't working in OSGi.
             // https://r3-cev.atlassian.net/browse/CORE-7168
             //"hibernate.generate_statistics" to true.toString(),
-            "javax.persistence.validation.mode" to "none"
+            "javax.persistence.validation.mode" to "none",
+            "hibernate.query.plan_cache_max_size" to "1",
+            "hibernate.query.plan_parameter_metadata_max_size" to "1",
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders
 
@@ -99,6 +101,34 @@ class EntityManagerFactoryFactoryImpl(
         return EntityManagerFactoryWrapper(entityManagerFactory, configuration.dataSource)
     }
 }
+
+/**
+ * 11min30s
+ * Allocated All Pools: 349 MB
+ * Used Metaspace: 191 MB
+ * Used CodeHeap 'profiled nmethods': 76 MB
+ * Used CodeHeap 'non-profiled nmethods': 37 MB
+ * Used Compressed Class Space: 17 MB
+ * Used CodeHeap 'non-nmethods': 1.7 MB
+ *
+ * 18min30s
+ * Allocated All Pools: 349 MB
+ * Used Metaspace: 191 MB
+ * Used CodeHeap 'profiled nmethods': 76 MB
+ * Used CodeHeap 'non-profiled nmethods': 38 MB
+ * Used Compressed Class Space: 17 MB
+ * Used CodeHeap 'non-nmethods': 1.7 MB
+ *
+ * 23min20s
+ * Allocated All Pools: 353 MB
+ * Used Metaspace: 193 MB
+ * Used CodeHeap 'profiled nmethods': 74 MB
+ * Used CodeHeap 'non-profiled nmethods': 38 MB
+ * Used Compressed Class Space: 17 MB
+ * Used CodeHeap 'non-nmethods': 1.7 MB
+ *
+ *
+ */
 
 fun DdlManage.convert(): String {
     return when (this) {

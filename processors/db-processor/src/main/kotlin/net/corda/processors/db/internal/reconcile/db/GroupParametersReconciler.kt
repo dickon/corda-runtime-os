@@ -117,6 +117,7 @@ class GroupParametersReconciler(
         require(context is VirtualNodeReconciliationContext) {
             "Reconciliation information must be virtual node level for group parameters reconciliation"
         }
+        logger.info("CONAL - context executing for $context")
         return context.getOrCreateEntityManager().getCurrentGroupParameters()?.let { entity ->
             val (signature, signatureSpec) = if (entity.isSigned()) {
                 CryptoSignatureWithKey(

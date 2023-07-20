@@ -3,6 +3,7 @@ package net.corda.processors.db.internal.reconcile.db
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.VirtualNodeInfo
+import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -44,7 +45,7 @@ class VirtualNodeReconciliationContext(
     private val jpaEntitiesSet: JpaEntitiesSet,
     val virtualNodeInfo: VirtualNodeInfo
 ) : ReconciliationContext {
-
+    private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     private var entityManagerFactory: EntityManagerFactory? = null
     private var entityManager: EntityManager? = null
 
@@ -57,6 +58,7 @@ class VirtualNodeReconciliationContext(
             .also { entityManager = it }
 
     override fun close() {
+        logger.info("CONAL - closing inside VirtualNodeReconciliationContext")
         entityManager?.close()
         entityManagerFactory?.close()
         entityManager = null
