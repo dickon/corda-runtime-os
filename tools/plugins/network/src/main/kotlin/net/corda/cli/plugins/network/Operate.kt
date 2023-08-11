@@ -19,7 +19,10 @@ import picocli.CommandLine.Command
         RevokePreAuthToken::class,
         AddGroupApprovalRule::class,
         GetGroupApprovalRules::class,
-        DeleteGroupApprovalRule::class
+        DeleteGroupApprovalRule::class,
+        GetRegistrationsRequest::class,
+        ApproveRegistrationRequest::class,
+        DeclineRegistrationRequest::class
     ]
 )
 class Operate : Runnable {
