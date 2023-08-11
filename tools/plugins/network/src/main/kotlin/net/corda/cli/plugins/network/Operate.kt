@@ -22,7 +22,9 @@ import picocli.CommandLine.Command
         DeleteGroupApprovalRule::class,
         GetRegistrationsRequest::class,
         ApproveRegistrationRequest::class,
-        DeclineRegistrationRequest::class
+        DeclineRegistrationRequest::class,
+        ActivateMember::class,
+        SuspendMember::class
     ]
 )
 class Operate : Runnable {
