@@ -38,4 +38,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:lifecycle:lifecycle-test-impl")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation  project(':libs:rest:json-serialization')
 }
