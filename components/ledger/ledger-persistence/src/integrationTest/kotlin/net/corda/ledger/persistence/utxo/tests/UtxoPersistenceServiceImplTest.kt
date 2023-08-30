@@ -7,7 +7,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.db.persistence.testkit.components.VirtualNodeService
-import net.corda.db.testkit.PostgresDbUtils
+import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
@@ -114,7 +114,7 @@ class UtxoPersistenceServiceImplTest {
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var factoryRegistry: ContractStateVaultJsonFactoryRegistry
     private lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
-    private val emConfig = PostgresDbUtils.getEntityManagerConfiguration("ledger_db_for_test")
+    private val emConfig = DbUtils.getEntityManagerConfiguration("ledger_db_for_test")
 
     companion object {
         // Truncating to millis as on Windows builds the micros are lost after fetching the data from Postgres
@@ -252,7 +252,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `find unconsumed visible transaction states`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val createdTs = testClock.instant()
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
         val transaction1 = createSignedTransaction(createdTs)
@@ -334,7 +334,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `update transaction status`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         var floorDateTime = nextTime()
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -352,7 +352,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `update transaction status does not affect other transactions`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         var floorDateTime = nextTime()
 
         val entityFactory = UtxoEntityFactory(entityManagerFactory)
@@ -372,7 +372,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist signed transaction`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val account = "Account"
         val transactionStatus = VERIFIED
         val signedTransaction = createSignedTransaction(Instant.now())
@@ -536,7 +536,7 @@ class UtxoPersistenceServiceImplTest {
 
     @Test
     fun `persist and find signed group parameter`() {
-        Assumptions.assumeFalse(PostgresDbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
         val signedGroupParameters = SignedGroupParameters(
             ByteBuffer.wrap(ByteArray(1)),
             CryptoSignatureWithKey(
