@@ -5,8 +5,7 @@ import picocli.CommandLine.Command
 @Command(
     name = "operate",
     description = [
-        "Operate on the network",
-        "This sub command should only be used for internal development"
+        "MGM operations for managing application networks"
     ],
     subcommands = [
         AllowClientCertificate::class,
@@ -19,8 +18,4 @@ import picocli.CommandLine.Command
         RevokePreAuthToken::class
     ]
 )
-class Operate : Runnable {
-    override fun run() {
-        // Implementation for the operate command
-    }
-}
+class Operate
