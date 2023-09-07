@@ -25,12 +25,6 @@ spec:
   {{- with .className }}
   ingressClassName: {{ . | quote }}
   {{- end }}
-  tls:
-  {{- range .hosts }}
-    - hosts:
-        - {{ . | quote }}
-      secretName: {{ . | quote }}
-  {{- end }}
   rules:
   {{- range .hosts }}
     - host: {{ . | quote }}
