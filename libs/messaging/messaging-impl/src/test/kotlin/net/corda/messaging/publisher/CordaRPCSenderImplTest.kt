@@ -1,5 +1,11 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.messaging.RPCRequest
@@ -10,8 +16,8 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -40,12 +46,6 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class CordaRPCSenderImplTest {
 
@@ -59,7 +59,7 @@ class CordaRPCSenderImplTest {
     private val serializer: CordaAvroSerializer<String> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
-    private val cordaProducer: CordaProducer = mock()
+    private val cordaProducer: CordaProducer<Any> = mock()
     private val futureTracker = spy<FutureTracker<String>>()
     private val cordaConsumer = mock<CordaConsumer<String, RPCResponse>>()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
@@ -175,7 +175,7 @@ class CordaRPCSenderImplTest {
             anyOrNull(),
         )
 
-        val sentRecords = argumentCaptor<List<CordaProducerRecord<*, *>>>()
+        val sentRecords = argumentCaptor<List<CordaMessage.Kafka<Any, Any>>>()
         doNothing().whenever(cordaProducer).sendRecords(sentRecords.capture())
 
         val correctData = byteArrayOf(8)

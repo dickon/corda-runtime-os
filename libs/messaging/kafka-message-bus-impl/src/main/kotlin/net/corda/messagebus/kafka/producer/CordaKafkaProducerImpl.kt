@@ -3,8 +3,8 @@ package net.corda.messagebus.kafka.producer
 import io.micrometer.core.instrument.binder.MeterBinder
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
 import net.corda.messagebus.kafka.utils.toKafkaRecord
@@ -47,7 +47,7 @@ class CordaKafkaProducerImpl(
     private val producer: Producer<Any, Any>,
     private val chunkSerializerService: ChunkSerializerService,
     private val producerMetricsBinder: MeterBinder,
-) : CordaProducer {
+) : CordaProducer<CordaMessage.Kafka<Any, Any>> {
     private val topicPrefix = config.topicPrefix
     private val transactional = config.transactional
     private val clientId = config.clientId
@@ -104,21 +104,21 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+    override fun send(record: CordaMessage.Kafka<Any, Any>, callback: CordaProducer.Callback?) {
         getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, no partition") {
             sendRecord(record, callback)
         }
     }
 
-    override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+    override fun send(record: CordaMessage.Kafka<Any, Any>, partition: Int, callback: CordaProducer.Callback?) {
         getOrCreateBatchPublishTracing(clientId).begin(listOf(record.headers))
         tryWithCleanupOnFailure("send single record, with partition") {
             sendRecord(record, callback, partition)
         }
     }
 
-    override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+    override fun sendRecords(records: List<CordaMessage.Kafka<Any, Any>>) {
         getOrCreateBatchPublishTracing(clientId).begin(records.map { it.headers })
         tryWithCleanupOnFailure("send multiple records, no partition") {
             for (record in records) {
@@ -127,7 +127,7 @@ class CordaKafkaProducerImpl(
         }
     }
 
-    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaMessage.Kafka<Any, Any>>>) {
         val tracing = getOrCreateBatchPublishTracing(clientId)
         tracing.begin(recordsWithPartitions.map { it.second.headers })
         tryWithCleanupOnFailure("send multiple records, with partitions") {
@@ -144,7 +144,7 @@ class CordaKafkaProducerImpl(
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
-    private fun sendRecord(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
+    private fun sendRecord(record: CordaMessage.Kafka<Any, Any>, callback: CordaProducer.Callback? = null, partition: Int? = null) {
         val chunkedRecords = chunkSerializerService.generateChunkedRecords(record)
         if (chunkedRecords.isNotEmpty()) {
             sendChunks(chunkedRecords, callback, partition)
@@ -154,7 +154,7 @@ class CordaKafkaProducerImpl(
     }
 
     private fun sendWholeRecord(
-        record: CordaProducerRecord<*, *>,
+        record: CordaMessage.Kafka<Any, Any>,
         partition: Int?,
         callback: CordaProducer.Callback?
     ) {
@@ -188,12 +188,12 @@ class CordaKafkaProducerImpl(
      * due it waiting for more chunks to arrive.
      * Executes the callback if there is an error to mimic kafka producers error handling where it also sets the callback when there are
      * errors always.
-     * @param cordaProducerRecords chunked records to send
+     * @param cordaProducerMessages chunked records to send
      * @param callback for error handling in async producers
      * @param partition partition to send to. defaults to null.
      */
     private fun sendChunks(
-        cordaProducerRecords: List<CordaProducerRecord<*, *>>,
+        cordaProducerMessages: List<CordaMessage.Kafka<Any, Any>>,
         callback: CordaProducer.Callback? = null,
         partition: Int? = null
     ) {
@@ -204,16 +204,16 @@ class CordaKafkaProducerImpl(
             throw exceptionThrown
         }
 
-        recordChunksCountPerTopic(cordaProducerRecords)
+        recordChunksCountPerTopic(cordaProducerMessages)
 
-        cordaProducerRecords.forEach {
+        cordaProducerMessages.forEach {
             //note callback is only applicable to async calls which are not allowed
             producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
     }
 
-    private fun recordChunksCountPerTopic(cordaProducerRecords: List<CordaProducerRecord<*, *>>) {
-        cordaProducerRecords.groupBy { it.topic }
+    private fun recordChunksCountPerTopic(cordaProducerMessages: List<CordaMessage.Kafka<Any, Any>>) {
+        cordaProducerMessages.groupBy { it.topic }
             .mapValues { (_, records) -> records.size }
             .forEach { (topic, count) ->
                 CordaMetrics.Metric.Messaging.ProducerChunksGenerated.builder()

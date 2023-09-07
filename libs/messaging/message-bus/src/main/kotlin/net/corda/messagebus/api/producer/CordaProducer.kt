@@ -6,7 +6,7 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 /**
  * A Corda client that publishes messages to the underlying message bus.
  */
-interface CordaProducer : AutoCloseable {
+interface CordaProducer<T> : AutoCloseable {
 
     /**
      * Defines the callback for post-send events.  If there was an exception it will be provided on this callback.
@@ -22,7 +22,7 @@ interface CordaProducer : AutoCloseable {
      * @param callback A user-supplied callback to execute when the record has been successfully published or if an
      * error has occurred.
      */
-    fun send(record: CordaProducerRecord<*, *>, callback: Callback?)
+    fun send(record: T, callback: Callback?)
 
 
     /**
@@ -33,14 +33,14 @@ interface CordaProducer : AutoCloseable {
      * @param callback A user-supplied callback to execute when the record has been successfully published or if an
      * error has occurred
      */
-    fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: Callback?)
+    fun send(record: T, partition: Int, callback: Callback?)
 
     /**
      * Send [records] of varying key and value types to their respective topics
      *
      * @param records the list of records to send to be published
      */
-    fun sendRecords(records: List<CordaProducerRecord<*, *>>)
+    fun sendRecords(records: List<T>)
 
     /**
      * Send the records to the specified partitions.
@@ -48,7 +48,7 @@ interface CordaProducer : AutoCloseable {
      * @param recordsWithPartitions a list of pairs, where the first element is the partition and the second
      * is the record.
      */
-    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>)
+    fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, T>>)
 
     /**
      * Add the [consumer] offsets for a list of given [records] to the current transaction.

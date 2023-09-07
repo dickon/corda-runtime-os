@@ -16,7 +16,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
-import net.corda.messaging.utils.toCordaProducerRecord
+import net.corda.messaging.utils.toCordaDBMessage
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -151,7 +151,7 @@ class CordaPublisherImplTest {
     fun testTransactionPublishToPartition() {
         val recordsWithPartitions = listOf(1 to record, 2 to record, 3 to record)
         val cordaProducerRecordsWithPartitions = recordsWithPartitions.map {
-            Pair(it.first, it.second.toCordaProducerRecord())
+            Pair(it.first, it.second.toCordaDBMessage())
         }
         publishToPartition(true, recordsWithPartitions)
         verify(producer, times(1)).sendRecordsToPartitions(cordaProducerRecordsWithPartitions)

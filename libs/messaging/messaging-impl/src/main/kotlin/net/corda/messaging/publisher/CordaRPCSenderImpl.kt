@@ -1,5 +1,9 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -17,8 +21,8 @@ import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -35,10 +39,6 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getRPCResponseTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
@@ -59,7 +59,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     override val subscriptionName: LifecycleCoordinatorName
         get() = threadLooper.lifecycleCoordinatorName
 
-    private var producer: CordaProducer? = null
+    private var producer: CordaProducer<CordaMessage.Kafka<String, RPCRequest>>? = null
     private var responsePartition: CordaTopicPartition? = null
     private val responseTopic = getRPCResponseTopic(config.topic)
 
@@ -243,7 +243,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 ByteBuffer.wrap(reqBytes)
             )
 
-            val record = CordaProducerRecord(config.topic, correlationId, request)
+            val record = CordaMessage.Kafka(config.topic, correlationId, request)
             futureTracker.addFuture(correlationId, future, partition)
             try {
                 producer?.sendRecords(listOf(record))

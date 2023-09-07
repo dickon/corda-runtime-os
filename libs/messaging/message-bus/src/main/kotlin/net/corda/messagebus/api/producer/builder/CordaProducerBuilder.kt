@@ -17,9 +17,9 @@ interface CordaProducerBuilder {
      * @return Producer capable of publishing records of any type to any topic.
      * @throws CordaMessageAPIFatalException thrown if producer cannot be created.
      */
-    fun createProducer(
+    fun <T> createProducer(
         producerConfig: ProducerConfig,
         messageBusConfig: SmartConfig,
         onSerializationError: ((ByteArray) -> Unit)? = null
-    ): CordaProducer
+    ): CordaProducer<T>
 }

@@ -3,7 +3,10 @@
 package net.corda.tracing
 
 import io.javalin.core.JavalinConfig
-import net.corda.messagebus.api.producer.CordaProducerRecord
+import java.util.EnumSet
+import java.util.concurrent.ExecutorService
+import javax.servlet.DispatcherType
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -14,9 +17,6 @@ import net.corda.tracing.impl.TracingState
 import net.corda.tracing.impl.Unlimited
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.eclipse.jetty.servlet.FilterHolder
-import java.util.EnumSet
-import java.util.concurrent.ExecutorService
-import javax.servlet.DispatcherType
 
 private fun parseUnsignedIntWithErrorHandling(string: String) = try {
     Integer.parseUnsignedInt(string)
@@ -67,7 +67,15 @@ fun addTraceContextToRecord(it: Record<*, *>): Record<out Any, out Any> {
     return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
 }
 
-fun addTraceContextToRecord(it: CordaProducerRecord<*, *>): CordaProducerRecord<out Any, out Any> {
+fun addTraceContextToRecord(it: CordaMessage.DB<Any, Any>): CordaMessage.DB<Any, Any> {
+    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+}
+
+fun addTraceContextToRecord(it: CordaMessage.Kafka<Any, Any>): CordaMessage.Kafka<Any, Any> {
+    return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
+}
+
+fun addTraceContextToRecord(it: CordaMessage.RPC<Any, Any>): CordaMessage.RPC<Any, Any> {
     return it.copy(headers = TracingState.currentTraceService.addTraceHeaders(it.headers))
 }
 

@@ -3,8 +3,8 @@ package net.corda.messagebus.db.producer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
@@ -44,9 +44,9 @@ internal class CordaTransactionalDBProducerImplTest {
             mock(),
             mock(),
             true
-        ) as CordaProducer
+        ) as CordaProducer<CordaMessage.DB<Any, Any>>
 
-        val record = CordaProducerRecord(topic, key, value)
+        val record = CordaMessage.DB<Any, Any>(topic, key, value)
 
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             producer.send(record, null)
@@ -84,7 +84,7 @@ internal class CordaTransactionalDBProducerImplTest {
         val callback: CordaProducer.Callback = mock()
 
         val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, mock(), mock(), true)
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         producer.beginTransaction()
         producer.send(cordaRecord, callback)
@@ -113,7 +113,7 @@ internal class CordaTransactionalDBProducerImplTest {
         val callback: CordaProducer.Callback = mock()
 
         val producer = CordaTransactionalDBProducerImpl(serializer, dbAccess, writeOffsets, mock(), true)
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         producer.beginTransaction()
         producer.send(cordaRecord, callback)
@@ -168,7 +168,7 @@ internal class CordaTransactionalDBProducerImplTest {
             writeOffsets,
             mock(),
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         assertThrows<CordaRuntimeException> {
             producer.beginTransaction()
@@ -194,7 +194,7 @@ internal class CordaTransactionalDBProducerImplTest {
             mock(),
             false
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         assertDoesNotThrow {
             producer.beginTransaction()

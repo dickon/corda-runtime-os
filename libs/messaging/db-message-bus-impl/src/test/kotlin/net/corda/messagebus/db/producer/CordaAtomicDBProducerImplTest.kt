@@ -3,8 +3,8 @@ package net.corda.messagebus.db.producer
 import javax.persistence.RollbackException
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
@@ -62,7 +62,7 @@ internal class CordaAtomicDBProducerImplTest {
             writeOffsets,
             mock()
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         producer.send(cordaRecord, callback)
 
@@ -95,7 +95,7 @@ internal class CordaAtomicDBProducerImplTest {
             writeOffsets,
             mock()
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         producer.send(cordaRecord, 0, callback)
 
@@ -128,7 +128,7 @@ internal class CordaAtomicDBProducerImplTest {
             writeOffsets,
             mock()
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         assertThrows<CordaRuntimeException> {
             producer.send(cordaRecord, 0, callback)
@@ -153,7 +153,7 @@ internal class CordaAtomicDBProducerImplTest {
             mock(),
             false
         )
-        val cordaRecord = CordaProducerRecord(topic, key, value)
+        val cordaRecord = CordaMessage.DB<Any, Any>(topic, key, value)
 
         assertDoesNotThrow {
             producer.send(cordaRecord, 0, callback)

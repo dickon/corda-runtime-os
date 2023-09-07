@@ -2,8 +2,8 @@ package net.corda.messagebus.kafka.producer
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.kafka.config.ResolvedConsumerConfig
 import net.corda.messagebus.kafka.config.ResolvedProducerConfig
 import net.corda.messagebus.kafka.consumer.CordaKafkaConsumerImpl
@@ -59,7 +59,7 @@ class CordaKafkaProducerImplTest {
         CordaKafkaConsumerImpl(consumerConfig, consumer, null, consumerChunkDeserializerService, metricsBinder)
     private lateinit var cordaKafkaProducer: CordaKafkaProducerImpl
 
-    private val record: CordaProducerRecord<Any, Any> = CordaProducerRecord("topic", "key", "value")
+    private val record: CordaMessage.Kafka<Any, Any> = CordaMessage.Kafka("topic", "key", "value")
 
     @BeforeEach
     fun setup() {

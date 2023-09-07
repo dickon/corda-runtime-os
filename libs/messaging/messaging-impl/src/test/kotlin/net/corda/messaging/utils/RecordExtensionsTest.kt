@@ -15,7 +15,7 @@ class RecordExtensionsTest {
             headers =  listOf("a" to "b")
         )
 
-        val result = record.toCordaProducerRecord()
+        val result = record.toCordaDBMessage()
 
         assertThat(result.topic).isEqualTo(record.topic)
         assertThat(result.key).isEqualTo(record.key)

@@ -1,8 +1,13 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.messagebus.api.configuration.ProducerConfig
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -10,16 +15,11 @@ import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
-import net.corda.messaging.utils.toCordaProducerRecord
-import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.messaging.utils.toCordaDBMessage
+import net.corda.messaging.utils.toCordaDBMessages
 import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
@@ -71,7 +71,7 @@ internal class CordaPublisherImpl(
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
 
-        val cordaRecords = records.map { Pair(it.first, it.second.toCordaProducerRecord()) }
+        val cordaRecords = records.map { Pair(it.first, it.second.toCordaDBMessage()) }
         val futures = mutableListOf<CompletableFuture<Unit>>()
         if (config.transactional) {
             futures.add(publishTransactionWithPartitions(cordaRecords))
@@ -115,7 +115,7 @@ internal class CordaPublisherImpl(
      * Publish list of [records] asynchronously with results stored in [futures]
      */
     private fun publishRecordsAsync(records: List<Record<*, *>>, futures: MutableList<CompletableFuture<Unit>>) {
-        records.toCordaProducerRecords().forEach {
+        records.toCordaDBMessages().forEach {
             val fut = CompletableFuture<Unit>()
             futures.add(fut)
             cordaProducer.send(it) { ex ->
@@ -128,7 +128,7 @@ internal class CordaPublisherImpl(
      * Publish provided list of records to specific partitions asynchronously with results stored in [futures].
      */
     private fun publishRecordsToPartitionsAsync(
-        recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>,
+        recordsWithPartitions: List<Pair<Int, CordaMessage.DB<Any, Any>>>,
         futures: MutableList<CompletableFuture<Unit>>
     ) {
         recordsWithPartitions.forEach { (partition, record) ->
@@ -149,7 +149,7 @@ internal class CordaPublisherImpl(
      */
     private fun publishTransaction(records: List<Record<*, *>>): CompletableFuture<Unit> {
         return executeInTransaction {
-            it.sendRecords(records.toCordaProducerRecords())
+            it.sendRecords(records.toCordaDBMessages())
         }
     }
 
@@ -157,7 +157,7 @@ internal class CordaPublisherImpl(
      * Same as [publishTransaction] but publishing records to specific partitions.
      */
     private fun publishTransactionWithPartitions(
-        recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>
+        recordsWithPartitions: List<Pair<Int, CordaMessage.DB<Any, Any>>>
     ): CompletableFuture<Unit> {
         return executeInTransaction {
             it.sendRecordsToPartitions(recordsWithPartitions)
@@ -183,7 +183,7 @@ internal class CordaPublisherImpl(
     }
 
     @Synchronized
-    private fun executeInTransaction(block: (CordaProducer) -> Unit): CompletableFuture<Unit> {
+    private fun executeInTransaction(block: (CordaProducer<Any>) -> Unit): CompletableFuture<Unit> {
         val future = CompletableFuture<Unit>()
         try {
             tryWithSingleRecoveryAttempt {

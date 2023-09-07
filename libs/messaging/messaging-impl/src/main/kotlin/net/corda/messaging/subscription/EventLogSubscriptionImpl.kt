@@ -12,8 +12,8 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -25,7 +25,7 @@ import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.subscription.consumer.listener.ForwardingRebalanceListener
 import net.corda.messaging.subscription.consumer.listener.LoggingConsumerRebalanceListener
 import net.corda.messaging.utils.ExceptionUtils
-import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.messaging.utils.toCordaDBMessages
 import net.corda.messaging.utils.toEventLogRecord
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
@@ -160,7 +160,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
      * retries have been exceeded.
      * @throws CordaMessageAPIFatalException Fatal unrecoverable error occurred. e.g misconfiguration
      */
-    private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>, producer: CordaProducer) {
+    private fun pollAndProcessRecords(consumer: CordaConsumer<K, V>, producer: CordaProducer<Any>) {
         var attempts = 0
         while (!threadLooper.loopStopped) {
             try {
@@ -221,7 +221,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
      */
     private fun processDurableRecords(
         cordaConsumerRecords: List<CordaConsumerRecord<K, V>>,
-        producer: CordaProducer,
+        producer: CordaProducer<Any>,
         consumer: CordaConsumer<K, V>
     ) {
         if (cordaConsumerRecords.isEmpty()) {
@@ -233,11 +233,11 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     "size: ${cordaConsumerRecords.size})" }
             producer.beginTransaction()
             val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
-                .toCordaProducerRecords() }!!
+                .toCordaDBMessages() }!!
             producer.sendRecords(outputs)
             if(deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
+                    CordaMessage.DB(
                         getDLQTopic(config.topic),
                         UUID.randomUUID().toString(),
                         it

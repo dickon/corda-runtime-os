@@ -1,5 +1,8 @@
 package net.corda.messaging.subscription
 
+import java.nio.ByteBuffer
+import java.time.Clock
+import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -7,8 +10,8 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -22,7 +25,7 @@ import net.corda.messaging.subscription.consumer.StateAndEventConsumer
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.messaging.subscription.consumer.listener.StateAndEventConsumerRebalanceListener
 import net.corda.messaging.utils.getEventsByBatch
-import net.corda.messaging.utils.toCordaProducerRecords
+import net.corda.messaging.utils.toCordaDBMessages
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
@@ -30,9 +33,6 @@ import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Clock
-import java.util.UUID
 
 @Suppress("LongParameterList")
 internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -48,13 +48,13 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
 
-    private var nullableProducer: CordaProducer? = null
+    private var nullableProducer: CordaProducer<Any>? = null
     private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
     private var nullableEventConsumer: CordaConsumer<K, E>? = null
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
-    private val producer: CordaProducer
+    private val producer: CordaProducer<Any>
         get() {
             return nullableProducer ?: throw IllegalStateException("Unexpected access to null producer.")
         }
@@ -245,10 +245,10 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         commitTimer.recordCallable {
             producer.beginTransaction()
-            producer.sendRecords(outputRecords.toCordaProducerRecords())
+            producer.sendRecords(outputRecords.toCordaDBMessages())
             if (deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
+                    CordaMessage.Kafka(
                         getDLQTopic(eventTopic),
                         UUID.randomUUID().toString(),
                         it

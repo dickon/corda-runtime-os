@@ -1,13 +1,14 @@
 package net.corda.messaging.chunking
 
+import java.nio.ByteBuffer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.ChunkBuilderService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.crypto.SecureHash
-import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +19,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 
 class ChunkSerializerServiceImplTest {
 
@@ -33,7 +33,7 @@ class ChunkSerializerServiceImplTest {
     private lateinit var chunkBuilderService: ChunkBuilderService
     private lateinit var chunkSerializerService: ChunkSerializerServiceImpl
     private lateinit var platformDigestService: PlatformDigestService
-    private lateinit var producerRecord: CordaProducerRecord<*, *>
+    private lateinit var producerRecord: CordaMessage.Kafka<Any, Any>
     private val value: String = "somevalue"
     private val key: String = "somekey"
 

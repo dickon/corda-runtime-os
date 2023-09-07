@@ -3,7 +3,7 @@ package net.corda.messagebus.kafka.utils
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
-import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -17,7 +17,7 @@ private val stringSerializer = StringSerializer()
 
 fun CordaOffsetResetStrategy.toKafka() = OffsetResetStrategy.valueOf(this.name)
 
-fun <K : Any, V : Any> CordaProducerRecord<K, V>.toKafkaRecord(
+fun CordaMessage.Kafka<Any, Any>.toKafkaRecord(
     topicPrefix: String,
     partition: Int? = null
 ): ProducerRecord<Any, Any> {

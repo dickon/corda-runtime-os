@@ -3,15 +3,15 @@ package net.corda.messaging.chunking
 import java.nio.ByteBuffer
 import java.util.UUID
 import kotlin.math.ceil
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
-import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -47,7 +47,7 @@ class ChunkSerializerServiceImpl(
         return generateChunksFromBytes(bytes, maxChunkSize)
     }
 
-    override fun generateChunkedRecords(producerRecord: CordaProducerRecord<*, *>): List<CordaProducerRecord<*, *>> {
+    override fun generateChunkedRecords(producerRecord: CordaMessage.Kafka<Any, Any>): List<CordaMessage.Kafka<Any, Any>> {
         val serializedKey = tryToSerialize(producerRecord.key)
         val valueBytes = tryToSerialize(producerRecord.value)
         if (serializedKey == null || valueBytes == null || valueBytes.size <= maxRecordSize) {
@@ -61,7 +61,7 @@ class ChunkSerializerServiceImpl(
                 .build()
         }
 
-        return chunksToKey.map { CordaProducerRecord(producerRecord.topic, it.key, it.value) }
+        return chunksToKey.map { CordaMessage.Kafka(producerRecord.topic, it.key, it.value) }
     }
 
     override fun getChunkKeysToClear(key: Any, oldValue: Any?, newValue: Any?): List<ChunkKey>? {

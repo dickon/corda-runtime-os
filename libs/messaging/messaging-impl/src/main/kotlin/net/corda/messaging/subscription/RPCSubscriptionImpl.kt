@@ -19,8 +19,8 @@ import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -110,7 +110,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer) {
+    private fun pollAndProcessRecords(consumer: CordaConsumer<String, RPCRequest>, producer: CordaProducer<Any>) {
         while (!threadLooper.loopStopped) {
             val consumerRecords = consumer.poll(config.pollTimeout)
             try {
@@ -134,7 +134,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     @Suppress("TooGenericExceptionCaught")
     private fun processRecords(
         consumerRecords: List<CordaConsumerRecord<String, RPCRequest>>,
-        producer: CordaProducer
+        producer: CordaProducer<Any>
     ) {
         consumerRecords.forEach {
             if (cannotReplyToRequest(it)) {
@@ -158,7 +158,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             val future = CompletableFuture<RESPONSE>()
 
             future.whenComplete { response, error ->
-                val record: CordaProducerRecord<String, RPCResponse>?
+                val record: CordaMessage<Any, Any>?
                 try {
                     when {
                         // the order of these is important due to how the futures api is
@@ -210,8 +210,8 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         request: RPCRequest,
         status: ResponseStatus,
         payload: ByteArray
-    ): CordaProducerRecord<String, RPCResponse> {
-        return CordaProducerRecord(
+    ): CordaMessage<Any, Any> {
+        return CordaMessage.Kafka(
             request.replyTopic,
             request.correlationKey,
             RPCResponse(

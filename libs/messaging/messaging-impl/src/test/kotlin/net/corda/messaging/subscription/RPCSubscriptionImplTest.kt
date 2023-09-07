@@ -1,5 +1,10 @@
 package net.corda.messaging.subscription
 
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -12,8 +17,8 @@ import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -41,11 +46,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class RPCSubscriptionImplTest {
     companion object {
@@ -85,11 +85,11 @@ class RPCSubscriptionImplTest {
     private val lifeCycleCoordinatorMockHelper = LifeCycleCoordinatorMockHelper()
     private lateinit var kafkaConsumer: CordaConsumer<String, RPCRequest>
     private lateinit var cordaConsumerBuilder: CordaConsumerBuilder
-    private val kafkaProducer: CordaProducer = mock()
+    private val kafkaProducer: CordaProducer<Any> = mock()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
 
     @Captor
-    private val captor = argumentCaptor<List<Pair<Int, CordaProducerRecord<Int, RPCResponse>>>>()
+    private val captor = argumentCaptor<List<Pair<Int, CordaMessage.Kafka<Int, RPCResponse>>>>()
 
     @BeforeEach
     fun before() {

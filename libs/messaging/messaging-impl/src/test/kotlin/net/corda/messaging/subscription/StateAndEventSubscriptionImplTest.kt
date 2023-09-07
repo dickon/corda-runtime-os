@@ -10,8 +10,8 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.TOPIC_PREFIX
 import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -57,7 +57,7 @@ class StateAndEventSubscriptionImplTest {
 
     private data class Mocks(
         val builder: StateAndEventBuilder,
-        val producer: CordaProducer,
+        val producer: CordaProducer<Any>,
         val stateAndEventConsumer: StateAndEventConsumer<String, String, String>,
     )
 
@@ -66,7 +66,7 @@ class StateAndEventSubscriptionImplTest {
         val stateAndEventConsumer: StateAndEventConsumer<String, String, String> = mock()
         val eventConsumer: CordaConsumer<String, String> = mock()
         val stateConsumer: CordaConsumer<String, String> = mock()
-        val producer: CordaProducer = mock()
+        val producer: CordaProducer<Any> = mock()
         val builder: StateAndEventBuilder = mock()
 
         val topicPartition = CordaTopicPartition(TOPIC, 0)
@@ -504,8 +504,8 @@ class StateAndEventSubscriptionImplTest {
         )
         verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
-            list.contains(CordaProducerRecord("Topic", "Key", "Value"))
+        verify(producer, times(1)).sendRecords(argThat { list: List<CordaMessage<Any, Any>> ->
+            list.contains(CordaMessage.Kafka("Topic", "Key", "Value"))
         })
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()

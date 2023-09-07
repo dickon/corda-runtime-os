@@ -1,12 +1,13 @@
 package net.corda.messagebus.db.producer
 
 import java.util.UUID
+import kotlin.math.abs
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
-import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messagebus.db.consumer.DBCordaConsumerImpl
 import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TopicRecordEntry
@@ -19,7 +20,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
 class CordaTransactionalDBProducerImpl(
@@ -28,7 +28,7 @@ class CordaTransactionalDBProducerImpl(
     private val writeOffsets: WriteOffsets,
     private val headerSerializer: MessageHeaderSerializer,
     private val throwOnSerializationError: Boolean = true
-) : CordaProducer {
+) : CordaProducer<CordaMessage.DB<Any, Any>> {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -43,19 +43,19 @@ class CordaTransactionalDBProducerImpl(
     private val inTransaction: Boolean
         get() = transaction != null
 
-    override fun send(record: CordaProducerRecord<*, *>, callback: CordaProducer.Callback?) {
+    override fun send(record: CordaMessage.DB<Any, Any>, callback: CordaProducer.Callback?) {
         verifyInTransaction()
         sendRecords(listOf(record))
         callback?.onCompletion(null)
     }
 
-    override fun send(record: CordaProducerRecord<*, *>, partition: Int, callback: CordaProducer.Callback?) {
+    override fun send(record: CordaMessage.DB<Any, Any>, partition: Int, callback: CordaProducer.Callback?) {
         verifyInTransaction()
         sendRecordsToPartitions(listOf(Pair(partition, record)))
         callback?.onCompletion(null)
     }
 
-    override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
+    override fun sendRecords(records: List<CordaMessage.DB<Any, Any>>) {
         verifyInTransaction()
         sendRecordsToPartitions(records.map {
             // Determine the partition
@@ -66,7 +66,7 @@ class CordaTransactionalDBProducerImpl(
         })
     }
 
-    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
+    override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaMessage.DB<Any, Any>>>) {
         verifyInTransaction()
         val dbRecords = recordsWithPartitions.mapNotNull { (partition, record) ->
             val offset = writeOffsets.getNextOffsetFor(CordaTopicPartition(record.topic, partition))
