@@ -16,6 +16,10 @@ class TokenClaimQueryEventHandler(
     private val recordFactory: RecordFactory,
     private val availableTokenService: AvailableTokenService
 ) : TokenEventHandler<ClaimQuery> {
+/*
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }*/
 
     override fun handle(
         tokenCache: TokenCache,
@@ -23,20 +27,26 @@ class TokenClaimQueryEventHandler(
         event: ClaimQuery
     ): Record<String, FlowEvent> {
 
+/*        val sb = StringBuffer()
+            .appendLine("Token Query for $event cache size = ${tokenCache.count()}")*/
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
 
         // if we didn't reach the target amount, reload the cache to ensure it's full and retry
         if (selectionResult.first < event.targetAmount) {
+//            sb.appendLine("Cahce miss, found only ${selectionResult}")
             val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex)
+//            sb.appendLine("Loaded ${findResult.tokens.size} tokens from DB")
             tokenCache.add(findResult.tokens)
+//            sb.appendLine("Cache size ${tokenCache.count()}")
             selectionResult = selectTokens(tokenCache, state, event)
         }
 
         val selectedAmount = selectionResult.first
         val selectedTokens = selectionResult.second
 
-        return if (selectedAmount >= event.targetAmount) {
+        val result = if (selectedAmount >= event.targetAmount) {
+//            sb.appendLine("Claim successful $selectionResult")
             state.addNewClaim(event.externalEventRequestId, selectedTokens)
             recordFactory.getSuccessfulClaimResponse(
                 event.flowId,
@@ -45,8 +55,13 @@ class TokenClaimQueryEventHandler(
                 selectedTokens
             )
         } else {
+//            sb.appendLine("Claim failed $selectionResult")
             recordFactory.getFailedClaimResponse(event.flowId, event.externalEventRequestId, event.poolKey)
         }
+
+//        log.info(sb.toString())
+
+        return result
     }
 
     private fun selectTokens(
