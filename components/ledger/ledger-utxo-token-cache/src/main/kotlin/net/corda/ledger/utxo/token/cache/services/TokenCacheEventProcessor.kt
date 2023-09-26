@@ -60,9 +60,7 @@ class TokenCacheEventProcessor constructor(
                 // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
                 // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
                 // this means the avro object is an old one, and it should be replaced by the new format.
-                val validClaims =
-                    nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
-                val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
+                val invalidClaims = nonNullableState.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
                 if (invalidClaims.isNotEmpty()) {
                     val invalidClaimsId = invalidClaims.map { it.claimId }
                     log.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
@@ -78,18 +76,7 @@ class TokenCacheEventProcessor constructor(
                     "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
                 }
 
-               /* val sb = StringBuffer()
-                sb.appendLine(
-                    "Token Selection Request type = ${handler.javaClass.simpleName} Pool = ${nonNullableState.poolKey}"
-                )
-                sb.appendLine("Before Handler:")
-                sb.append(getTokenSummary(tokenCache, poolCacheState))*/
-
                 val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-/*
-                sb.appendLine("After Handler:")
-                sb.append(getTokenSummary(tokenCache, poolCacheState))
-                log.info(sb.toString())*/
 
                 if (result == null) {
                     StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
@@ -112,42 +99,4 @@ class TokenCacheEventProcessor constructor(
             StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
         }
     }
-/*
-    private fun getTokenSummary(tokenCache: TokenCache, state: PoolCacheState): String {
-        val cachedTokenValue = tokenCache.sumOf { it.amount }
-        val cachedTokenCount = tokenCache.count()
-        val avroState = state.toAvro()
-        val sb = StringBuffer()
-        sb.appendLine("Token Cache Summary:")
-        sb.appendLine("Token Balance: $cachedTokenValue")
-        sb.appendLine("Token Count  : $cachedTokenCount")
-
-        if (avroState.tokenClaims == null) {
-            avroState.tokenClaims = listOf()
-        }
-
-        avroState.tokenClaims.forEach {
-            val claimedTokens = it.claimedTokens
-            val claimCount = claimedTokens.size
-            val claimBalance = claimedTokens.sumOf { token -> amountToBigDecimal(token.amount) }
-            val tokens = claimedTokens.joinToString(" ") { token ->
-                "(${token.stateRef}-${amountToBigDecimal(token.amount)})"
-            }
-            sb.appendLine(
-                "Claim       : ${it.claimId} Token Count $claimCount Token Balance $claimBalance Tokens:${tokens}"
-            )
-        }
-        return sb.toString()
-    }
-
-    private fun amountToBigDecimal(avroTokenAmount: TokenAmount): BigDecimal {
-        val unscaledValueBytes = ByteArray(avroTokenAmount.unscaledValue.remaining())
-            .apply { avroTokenAmount.unscaledValue.get(this) }
-
-        avroTokenAmount.unscaledValue.position(0)
-        return BigDecimal(
-            BigInteger(unscaledValueBytes),
-            avroTokenAmount.scale
-        )
-    }*/
 }
