@@ -13,21 +13,29 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
+import org.osgi.service.component.annotations.Reference
+import org.osgi.util.promise.Deferred
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class RPCClient(
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     override val id: String,
-    private val serializer: CordaAvroSerializer<Any>,
     httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
+
+    // TODO: Confirm types for serdes
+    private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
+    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Record::class.java)
 
     private val httpExceptions = setOf(
         IOException::class,
@@ -71,7 +79,11 @@ class RPCClient(
 
         // TODO Handle actual response type of Record<String, FlowEvent> (topic: topic, key: flowId, value: FlowEvent)
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-        return MediatorMessage(response.body(), mutableMapOf("statusCode" to response.statusCode()))
+
+        // TODO Add handling for various status codes
+        val deserializedResponse = deserializer.deserialize(response.body())
+
+        return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
 
     // TODO This is placeholder exception handling
