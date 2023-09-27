@@ -6,7 +6,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpTimeoutException
-import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +13,8 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import org.slf4j.Logger
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory
 
 class RPCClient(
     override val id: String,
+    private val serializer: CordaAvroSerializer<Any>,
     httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
@@ -60,16 +62,15 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
-        // TODO The real message will be an avro-serialized payload
-        val payload = message.payload.toString().toByteArray(StandardCharsets.UTF_8)
+        val payload = serializer.serialize(message.payload as ExternalEvent)
 
         val request = HttpRequest.newBuilder()
             .uri(URI("https://www.google.com/"))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
-        // TODO Determine the actual response type
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+        // TODO Handle actual response type of Record<String, FlowEvent> (topic: topic, key: flowId, value: FlowEvent)
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
         return MediatorMessage(response.body(), mutableMapOf("statusCode" to response.statusCode()))
     }
 
