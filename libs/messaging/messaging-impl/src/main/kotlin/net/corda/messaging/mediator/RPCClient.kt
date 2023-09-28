@@ -19,14 +19,14 @@ import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import org.osgi.service.component.annotations.Reference
-import org.osgi.util.promise.Deferred
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
-    httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
+    private val onSerializationError: ((ByteArray) -> Unit)?,
+    private val httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
     private val job = Job()
@@ -92,6 +92,9 @@ class RPCClient(
             in coroutineExceptions -> log.error("Something went wrong while launching coroutine in RPCClient: $e")
             else -> log.error("Unhandled exception in RPCClient: $e")
         }
+
+        // Temp
+        onSerializationError?.invoke("hello".toByteArray())
 
         deferred.completeExceptionally(e)
     }

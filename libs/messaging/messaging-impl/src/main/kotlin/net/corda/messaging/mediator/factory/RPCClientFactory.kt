@@ -16,6 +16,10 @@ class RPCClientFactory(
     @Reference
     lateinit var cordaSerializationFactory: CordaAvroSerializationFactory
     override fun create(config: MessagingClientConfig): MessagingClient {
-        return RPCClient(id, cordaSerializationFactory)
+        return RPCClient(
+            id,
+            cordaSerializationFactory,
+            config.onSerializationError
+        )
     }
 }
