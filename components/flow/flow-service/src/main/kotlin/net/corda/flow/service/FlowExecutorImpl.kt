@@ -69,7 +69,7 @@ class FlowExecutorImpl constructor(
             subscriptionRegistrationHandle?.close()
             subscription?.close()
 
-            subscription = subscriptionFactory.createStateAndEventSubscription(
+            subscription = subscriptionFactory.createFlowStateAndEventSubscription(
                 SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
                 flowEventProcessorFactory.create(updatedConfigs),
                 messagingConfig
