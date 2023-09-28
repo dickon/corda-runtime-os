@@ -24,9 +24,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class RPCClient(
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     override val id: String,
+    cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
@@ -70,10 +69,10 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
-        val payload = serializer.serialize(message.payload as ExternalEvent)
+        val payload = serializer.serialize(message.payload as Record)
 
         val request = HttpRequest.newBuilder()
-            .uri(URI("https://www.google.com/"))
+            .uri(URI("corda-flow-mapper-worker-cluster-ip-service:7000"))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
