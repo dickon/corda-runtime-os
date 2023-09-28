@@ -66,7 +66,7 @@ fun ClusterInfo.onboardMgm(
     )
 
     val certificateAliases = certificateAuthorities.map { ca ->
-        val certificateAlias = "$CERT_ALIAS_P2P${ca.name}"
+        val certificateAlias = ca.name
         if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS${ca.name}", CAT_TLS)) {
             val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS${ca.name}", CAT_TLS, DEFAULT_KEY_SCHEME)
             val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)

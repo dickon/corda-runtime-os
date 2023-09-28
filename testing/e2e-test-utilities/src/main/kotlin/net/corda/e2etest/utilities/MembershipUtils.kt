@@ -86,7 +86,7 @@ fun ClusterInfo.onboardMember(
     addSoftHsmFor(holdingId, CAT_LEDGER)
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
 
-    val tlsCertificateAlias = "$CERT_ALIAS_P2P${certificateAuthority.name}"
+    val tlsCertificateAlias = certificateAuthority.name
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS)) {
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
