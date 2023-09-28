@@ -532,4 +532,22 @@ Worker affinity
 {{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $worker ) ) ) ) }}
 affinity:
 {{- toYaml $affinity | nindent 2 }}
-{{- end }}
+
+{{/*
+Cluster IP service
+*/}}
+{{- define "corda.cluster-ip-service" }}
+{{- $workerName := printf "%s-%s-worker" ( include "corda.fullname" . ) ( include "corda.workerTypeKebabCase" .worker ) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $workerName }}-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $workerName }}-worker
+  ports:
+      - protocol: TCP
+      port: 7000
+      targetPort: 7000
+{{- end -}}
