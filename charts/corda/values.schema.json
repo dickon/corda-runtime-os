@@ -1759,10 +1759,6 @@
                                             "minimum": 1,
                                             "default": 5,
                                             "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        },
-                                        "clusterIPService": {
-                                            "port": 7000,
-                                            "targetPort": 7000
                                         }
                                     }
                                 }
