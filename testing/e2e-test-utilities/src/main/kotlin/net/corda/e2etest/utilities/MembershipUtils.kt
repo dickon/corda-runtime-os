@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.e2etest.utilities.types.NamedFileSystemCertificatesAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
@@ -59,7 +60,8 @@ fun ClusterInfo.onboardMember(
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    useSessionCertificate: Boolean = false
+    useSessionCertificate: Boolean = false,
+    certificateAuthority: NamedFileSystemCertificatesAuthority = getCa(),
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -67,30 +69,33 @@ fun ClusterInfo.onboardMember(
 
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
     val sessionKeyId = createKeyFor(holdingId, "$holdingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME)
-    var memberSessionCert: String? = null
-    val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$holdingId"
-    if (useSessionCertificate) {
+    val memberSessionCertAlias = if (useSessionCertificate) {
+        val alias = "$CERT_ALIAS_SESSION-$holdingId"
         val memberSessionCsr = generateCsr(x500Name, sessionKeyId, holdingId)
-        memberSessionCert = getCa().generateCert(memberSessionCsr)
+        val memberSessionCert = certificateAuthority.generateCert(memberSessionCsr)
         val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(memberSessionCert.toByteArray())
         }
-        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, mgmSessionCertAlias, holdingId)
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, alias, holdingId)
+        alias
+    } else {
+        null
     }
 
     addSoftHsmFor(holdingId, CAT_LEDGER)
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
+    val tlsCertificateAlias = "$CERT_ALIAS_P2P${certificateAuthority.name}"
+    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS)) {
+        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
-        val tlsCert = getCa().generateCert(tlsCsr)
+        val tlsCert = certificateAuthority.generateCert(tlsCsr)
         val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()
             it.writeBytes(tlsCert.toByteArray())
         }
-        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(tlsCertFile, CERT_USAGE_P2P, tlsCertificateAlias)
         tlsCertificateUploadedCallback(tlsCert)
     }
 
@@ -99,11 +104,7 @@ fun ClusterInfo.onboardMember(
         ledgerKeyId
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
-    if (memberSessionCert != null) {
-        configureNetworkParticipant(holdingId, sessionKeyId, mgmSessionCertAlias)
-    } else {
-        configureNetworkParticipant(holdingId, sessionKeyId)
-    }
+    configureNetworkParticipant(holdingId, sessionKeyId, memberSessionCertAlias, tlsCertificateAlias)
 
     val registrationId = register(holdingId, registrationContext, waitForApproval)
 
@@ -173,12 +174,18 @@ fun ClusterInfo.onboardNotaryMember(
 fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
     sessionKeyId: String,
-    sessionCertAlias: String? = null
+    sessionCertAlias: String? = null,
+    tlsCertificateAlias: String,
 ) {
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionCertAlias) }
+            command { configureNetworkParticipant(
+                holdingIdentityShortHash = holdingId,
+                sessionKeyId = sessionKeyId,
+                sessionCertAlias = sessionCertAlias,
+                tlsCertificateAlias = tlsCertificateAlias,
+            ) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
         }

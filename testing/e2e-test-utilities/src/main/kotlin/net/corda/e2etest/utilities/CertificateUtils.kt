@@ -6,6 +6,7 @@ import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.FileSystemCertificatesAuthority
 import net.corda.crypto.test.certificates.generation.KeysFactoryDefinitions
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.types.NamedFileSystemCertificatesAuthority
 import net.corda.rest.ResponseCode
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.utilities.seconds
@@ -17,11 +18,17 @@ import java.io.File
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
-fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
+fun getCa(): NamedFileSystemCertificatesAuthority = CertificateAuthorityFactory
     .createFileSystemLocalAuthority(
         KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
         File("build${File.separator}tmp${File.separator}ca")
     ).also { it.save() }
+    .let {
+        NamedFileSystemCertificatesAuthority(
+            it,
+            CERT_ALIAS_P2P,
+        )
+    }
 
 /**
  * Generate a certificate from a CSR as a PEM string.
