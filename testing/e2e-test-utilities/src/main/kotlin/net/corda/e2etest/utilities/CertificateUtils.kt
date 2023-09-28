@@ -18,15 +18,17 @@ import java.io.File
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
-fun getCa(): NamedFileSystemCertificatesAuthority = CertificateAuthorityFactory
+fun getCa(
+    name: String = CERT_ALIAS_P2P,
+): NamedFileSystemCertificatesAuthority = CertificateAuthorityFactory
     .createFileSystemLocalAuthority(
         KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
-        File("build${File.separator}tmp${File.separator}ca")
+        File("build${File.separator}tmp${File.separator}$name")
     ).also { it.save() }
     .let {
         NamedFileSystemCertificatesAuthority(
             it,
-            CERT_ALIAS_P2P,
+            name,
         )
     }
 
