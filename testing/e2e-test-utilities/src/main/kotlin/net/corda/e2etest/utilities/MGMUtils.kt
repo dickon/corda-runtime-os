@@ -16,7 +16,6 @@ import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
 import net.corda.rest.annotations.RestApiVersion
 import java.nio.charset.StandardCharsets
-import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
@@ -26,7 +25,6 @@ import java.security.cert.X509Certificate
 fun ClusterInfo.onboardMgm(
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig(),
-    certificateAuthorities: Collection<NamedFileSystemCertificatesAuthority>  = listOf(getCa()),
 ): NetworkOnboardingMetadata {
     val mgmCpiName = "mgm.cpi"
     conditionallyUploadCpiSigningCertificate()
@@ -38,7 +36,7 @@ fun ClusterInfo.onboardMgm(
         mgmHoldingId, "$mgmHoldingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME
     )
     val mgmSessionCertAliases = if (groupPolicyConfig.sessionPkiMode == "Standard") {
-        certificateAuthorities.map { ca ->
+        groupPolicyConfig.certificateAuthorities.map { ca ->
             val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$mgmHoldingId${ca.name}"
             val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
             val mgmSessionCert = ca.generateCert(mgmSessionCsr)
@@ -59,13 +57,12 @@ fun ClusterInfo.onboardMgm(
     )
 
     val registrationContext = createMgmRegistrationContext(
-        certificateAuthorities.map { it.caCertificate },
         sessionKeyId,
         ecdhKeyId,
         groupPolicyConfig
     )
 
-    val certificateAliases = certificateAuthorities.map { ca ->
+    val certificateAliases = groupPolicyConfig.certificateAuthorities.map { ca ->
         val certificateAlias = ca.name
         if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS${ca.name}", CAT_TLS)) {
             val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS${ca.name}", CAT_TLS, DEFAULT_KEY_SCHEME)
@@ -309,14 +306,14 @@ data class GroupPolicyConfig(
     val p2pMode: String = "Authenticated_Encryption",
     val sessionPolicy: String = "Distinct",
     val tlsPkiMode: String = "Standard",
-    val tlsVersion: String = "1.3"
+    val tlsVersion: String = "1.3",
+    val certificateAuthorities: Collection<NamedFileSystemCertificatesAuthority>  = listOf(getCa()),
 )
 
 /**
  * Create a default registration context for registering the MGM
  */
 private fun ClusterInfo.createMgmRegistrationContext(
-    caTrustRoots: Collection<Certificate>,
     sessionKeyId: String,
     ecdhKeyId: String,
     groupPolicyConfig: GroupPolicyConfig
@@ -335,8 +332,8 @@ private fun ClusterInfo.createMgmRegistrationContext(
     "corda.group.tls.version" to groupPolicyConfig.tlsVersion,
     "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
     "corda.endpoints.0.protocolVersion" to p2p.protocol,
-) + caTrustRoots.flatMapIndexed { index, certificate ->
-    val pem = certificate.toPem()
+) + groupPolicyConfig.certificateAuthorities.flatMapIndexed { index, ca ->
+    val pem = ca.caCertificate.toPem()
     listOf(
         "corda.group.trustroot.tls.$index" to pem,
         "corda.group.trustroot.session.$index" to pem,

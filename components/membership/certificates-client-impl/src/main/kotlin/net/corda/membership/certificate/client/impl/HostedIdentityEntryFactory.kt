@@ -275,7 +275,7 @@ internal class HostedIdentityEntryFactory(
                 }
             }.firstOrNull()
             ?: throw CordaRuntimeException(
-                "The ${CertificateType::class.java.simpleName} was not signed by the correct certificate authority"
+                "The ${certificateType::class.java.simpleName} was not signed by the correct certificate authority"
             )
     }
 }
