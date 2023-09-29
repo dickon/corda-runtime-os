@@ -14,9 +14,10 @@ class RPCClientFactoryTest {
     @BeforeEach
     fun beforeEach() {
         cordaSerializationFactory = mock(CordaAvroSerializationFactory::class.java)
-
-        rpcClientFactory = RPCClientFactory("RPCClient1")
-        rpcClientFactory.cordaSerializationFactory = cordaSerializationFactory
+        rpcClientFactory = RPCClientFactory(
+            "RPCClient1",
+            mock(CordaAvroSerializationFactory::class.java)
+        )
     }
 
     @Test
