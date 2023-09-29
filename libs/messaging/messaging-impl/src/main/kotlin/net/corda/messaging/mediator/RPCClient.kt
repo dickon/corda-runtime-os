@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -21,9 +22,10 @@ class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     private val onSerializationError: ((ByteArray) -> Unit)?,
-    private val httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
+    httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
+
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
@@ -57,12 +59,13 @@ class RPCClient(
         val payload = serializePayload(message)
 
         val request = HttpRequest.newBuilder()
-            .uri(URI("corda-flow-mapper-worker-cluster-ip-service:7000"))
+            .uri(URI("http://corda-flow-mapper-worker-cluster-ip-service:7000"))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
+        // TODO: The HTTP client should be abstracted out into its own class which handles retries
         if (response.statusCode() in 400..499) {
             throw HttpClientErrorException(response.statusCode(), "Client error response from server.")
         } else if (response.statusCode() in 500..599) {
@@ -74,25 +77,25 @@ class RPCClient(
         return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
 
-    private fun serializePayload(message: MediatorMessage<*>): ByteArray? {
+    private fun serializePayload(message: MediatorMessage<*>): ByteArray {
         return try {
-            serializer.serialize(message.payload as Record)
+            serializer.serialize(message.payload as Record<*, *>)!!
         } catch (e: Exception) {
             val errorMsg = "Failed to serialize instance of class type ${
                 message.payload?.let { it::class.java.name } ?: "null"
             }."
             onSerializationError?.invoke(errorMsg.toByteArray())
-            null
+            throw(e)
         }
     }
 
-    private fun deserializePayload(payload: ByteArray): Record? {
+    private fun deserializePayload(payload: ByteArray): Record<*,*> {
         return try {
-            deserializer.deserialize(payload)
-        } catch (e: Throwable) {
+            deserializer.deserialize(payload)!!
+        } catch (e: Exception) {
             val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
             onSerializationError?.invoke(errorMsg.toByteArray())
-            null
+            throw(e)
         }
     }
 
