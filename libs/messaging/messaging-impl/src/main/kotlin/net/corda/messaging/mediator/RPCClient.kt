@@ -5,8 +5,6 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.net.http.HttpTimeoutException
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -14,11 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -32,22 +27,12 @@ class RPCClient(
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
-    // TODO: Confirm types for serdes
     private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Record::class.java)
 
-    private val httpExceptions = setOf(
-        IOException::class,
-        InterruptedException::class,
-        HttpTimeoutException::class,
-        IllegalArgumentException::class,
-        SecurityException::class
-    )
-
-    private val coroutineExceptions = setOf(
-        IllegalStateException::class,
-        CancellationException::class
-    )
+    // TODO Temporary; need to find correct exceptions for these cases
+    class HttpClientErrorException(val statusCode: Int, message: String): Exception(message)
+    class HttpServerErrorException(val statusCode: Int, message: String): Exception(message)
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -69,32 +54,60 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
-        val payload = serializer.serialize(message.payload as Record)
+        val payload = serializePayload(message)
 
         val request = HttpRequest.newBuilder()
             .uri(URI("corda-flow-mapper-worker-cluster-ip-service:7000"))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
-        // TODO Handle actual response type of Record<String, FlowEvent> (topic: topic, key: flowId, value: FlowEvent)
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
-        // TODO Add handling for various status codes
-        val deserializedResponse = deserializer.deserialize(response.body())
+        if (response.statusCode() in 400..499) {
+            throw HttpClientErrorException(response.statusCode(), "Client error response from server.")
+        } else if (response.statusCode() in 500..599) {
+            throw HttpServerErrorException(response.statusCode(), "Server error response from server.")
+        }
+
+        val deserializedResponse = deserializePayload(response.body())
 
         return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
 
+    private fun serializePayload(message: MediatorMessage<*>): ByteArray? {
+        return try {
+            serializer.serialize(message.payload as Record)
+        } catch (e: Exception) {
+            val errorMsg = "Failed to serialize instance of class type ${
+                message.payload?.let { it::class.java.name } ?: "null"
+            }."
+            onSerializationError?.invoke(errorMsg.toByteArray())
+            null
+        }
+    }
+
+    private fun deserializePayload(payload: ByteArray): Record? {
+        return try {
+            deserializer.deserialize(payload)
+        } catch (e: Throwable) {
+            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            onSerializationError?.invoke(errorMsg.toByteArray())
+            null
+        }
+    }
+
     // TODO This is placeholder exception handling
     private fun handleExceptions(e: Exception, deferred: CompletableDeferred<MediatorMessage<*>?>) {
-        when (e::class) {
-            in httpExceptions -> log.error("Something went wrong while sending external event via RPC: $e")
-            in coroutineExceptions -> log.error("Something went wrong while launching coroutine in RPCClient: $e")
-            else -> log.error("Unhandled exception in RPCClient: $e")
-        }
+        when (e) {
+            is IOException,
+            is InterruptedException,
+            is IllegalArgumentException,
+            is SecurityException -> log.error("HTTP error in RPCClient: ", e)
 
-        // Temp
-        onSerializationError?.invoke("hello".toByteArray())
+            is IllegalStateException -> log.error("Coroutine error in RPCClient: ", e)
+
+            else -> log.error("Unhandled exception in RPCClient: ", e)
+        }
 
         deferred.completeExceptionally(e)
     }
