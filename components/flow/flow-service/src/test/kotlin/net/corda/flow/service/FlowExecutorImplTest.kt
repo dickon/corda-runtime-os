@@ -53,7 +53,7 @@ class FlowExecutorImplTest {
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
         whenever(
-            subscriptionFactory.createStateAndEventSubscription<String, Checkpoint, FlowEvent>(
+            subscriptionFactory.createFlowStateAndEventSubscription<String, Checkpoint, FlowEvent>(
                 any(),
                 any(),
                 any(),
@@ -137,7 +137,7 @@ class FlowExecutorImplTest {
         // now we change config and should see the subscription registration removed,
         // the subscription re-created and then the subscription registered again
         whenever(
-            subscriptionFactory.createStateAndEventSubscription<String, Checkpoint, FlowEvent>(
+            subscriptionFactory.createFlowStateAndEventSubscription<String, Checkpoint, FlowEvent>(
                 any(),
                 any(),
                 any(),
