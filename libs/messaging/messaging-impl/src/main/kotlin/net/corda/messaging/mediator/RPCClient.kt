@@ -59,7 +59,7 @@ class RPCClient(
         val payload = serializePayload(message)
 
         val request = HttpRequest.newBuilder()
-            .uri(URI("http://corda-flow-mapper-worker-cluster-ip-service:7000"))
+            .uri(URI("http://corda-flow-mapper-worker-internal-service:7000"))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
