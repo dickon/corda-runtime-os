@@ -4,7 +4,7 @@ Worker deployment.
 {{- define "corda.worker" -}}
 {{- $ := index . 0 }}
 {{- $worker := index . 2 }}
-{{- $workerName := include "corda.workerName" $worker }}
+{{- $workerName := printf "%s-%s-worker" ( include "corda.fullname" $ ) ( include "corda.workerTypeKebabCase" $worker ) }}
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
@@ -535,16 +535,9 @@ affinity:
 {{- end }}
 
 {{/*
-Corda worker name
-*/}}
-{{- define "corda.workerName" -}}
-{{- $workerKebabCase := include "corda.workerTypeKebabCase" . -}}
-{{- printf "%s-%s" (include "corda.fullname" $) $workerKebabCase -}}
-{{- end -}}
-
-{{/*
 Cluster IP service name
 */}}
-{{- define "worker-internal-service-name" }}
-{{- . }}-internal-service
-{{- end }}
+{{- define "corda.workerInternalServiceName" -}}
+{{- $workerName := include "corda.workerName" . -}}
+{{- printf "%s-internal-service" $workerName -}}
+{{- end -}}
