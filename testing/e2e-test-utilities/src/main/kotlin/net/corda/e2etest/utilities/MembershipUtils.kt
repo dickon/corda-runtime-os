@@ -88,6 +88,7 @@ fun ClusterInfo.onboardMember(
 
     val tlsCertificateAlias = certificateAuthority.name
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS${certificateAuthority.name}", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
         val tlsCert = certificateAuthority.generateCert(tlsCsr)
