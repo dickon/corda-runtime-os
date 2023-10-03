@@ -76,6 +76,9 @@ fun ClusterInfo.onboardMgm(
         }
         certificateAlias
     }
+    println("QQQ onboardMgm MGM 1")
+    println("QQQ certificateAliases: $certificateAliases")
+    println("QQQ registrationContext: $registrationContext")
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAliases.firstOrNull(), certificateAliases.first())
 

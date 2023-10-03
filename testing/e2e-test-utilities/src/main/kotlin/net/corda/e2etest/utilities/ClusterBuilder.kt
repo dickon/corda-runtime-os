@@ -405,7 +405,9 @@ class ClusterBuilder {
         post(
             "/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash",
             registrationContext
-        )
+        ).also {
+            println("QQQ 3 register: $registrationContext")
+        }
 
     fun getRegistrationStatus(holdingIdShortHash: String) =
         get("/api/$REST_API_VERSION_PATH/membership/$holdingIdShortHash")
