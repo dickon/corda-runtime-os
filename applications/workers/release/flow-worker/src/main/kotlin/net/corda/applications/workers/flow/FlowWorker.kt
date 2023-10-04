@@ -23,8 +23,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+import picocli.CommandLine.Mixin
 
 /** The worker for handling flows. */
 @Suppress("Unused", "LongParameterList")
