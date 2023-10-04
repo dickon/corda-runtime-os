@@ -1,8 +1,8 @@
 package net.corda.applications.workers.workercommon
 
-import java.nio.file.Path
 import net.corda.schema.configuration.BootConfig
 import picocli.CommandLine.Option
+import java.nio.file.Path
 
 /** The startup parameters handled by all workers. */
 class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
