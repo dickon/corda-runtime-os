@@ -317,7 +317,7 @@ data class GroupPolicyConfig(
 /**
  * Create a default registration context for registering the MGM
  */
-private fun ClusterInfo.createMgmRegistrationContext(
+internal fun ClusterInfo.createMgmRegistrationContext(
     sessionKeyId: String,
     ecdhKeyId: String,
     groupPolicyConfig: GroupPolicyConfig
@@ -341,8 +341,10 @@ private fun ClusterInfo.createMgmRegistrationContext(
     listOf(
         "corda.group.trustroot.tls.$index" to pem,
         "corda.group.trustroot.session.$index" to pem,
-    )
-}
+    ).also {
+        println("QQQ adding index $index to name ${ca.name}")
+    }
+}.also { println("QQQ got $it") }
 
 /**
  * Suspend a member identified by [x500Name].

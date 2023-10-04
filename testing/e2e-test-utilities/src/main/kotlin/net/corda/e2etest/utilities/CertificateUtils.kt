@@ -17,6 +17,26 @@ import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
 
+fun main() {
+    println("QQ 1")
+    val cl = object: ClusterInfo() {
+        override val id: String
+            get() = "T"
+    }
+    val caOne = getCa(
+        "a-one"
+    )
+    val caTwo = getCa(
+        "b-two"
+    )
+    val groupPolicyConfig = GroupPolicyConfig().copy(
+        certificateAuthorities = listOf(caOne, caTwo),
+    )
+    val r = cl.createMgmRegistrationContext("Q2", "Q3", groupPolicyConfig)
+    println(r)
+}
+
+
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
