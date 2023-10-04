@@ -533,11 +533,3 @@ Worker affinity
 affinity:
 {{- toYaml $affinity | nindent 2 }}
 {{- end }}
-
-{{/*
-Cluster IP service name
-*/}}
-{{- define "corda.workerInternalServiceName" -}}
-{{- $workerName := include "corda.workerName" . -}}
-{{- printf "%s-internal-service" $workerName -}}
-{{- end -}}

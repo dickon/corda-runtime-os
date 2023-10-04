@@ -72,37 +72,4 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
         description = ["Configuration for the state manager."]
     )
     var stateManagerParams = emptyMap<String, String>()
-
-    @Option(names = ["--worker-endpoint-crypto"], description = ["Internal RPC endpoint for the CryptoWorker"], required = true)
-    var cryptoWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-db"], description = ["Internal RPC endpoint for the DBWorker"], required = true)
-    var dbWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-flow"], description = ["Internal RPC endpoint for the FlowWorker"], required = true)
-    var flowWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-flowMapper"], description = ["Internal RPC endpoint for the FlowMapperWorker"], required = true)
-    var flowMapperWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-verification"], description = ["Internal RPC endpoint for the VerificationWorker"], required = true)
-    var verificationWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-membership"], description = ["Internal RPC endpoint for the MembershipWorker"], required = true)
-    var membershipWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-rest"], description = ["Internal RPC endpoint for the RestWorker"], required = true)
-    var restWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-p2pGateway"], description = ["Internal RPC endpoint for the P2PGatewayWorker"], required = true)
-    var p2pGatewayWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-p2pLinkManager"], description = ["Internal RPC endpoint for the P2PLinkManagerWorker"], required = true)
-    var p2pLinkManagerWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-persistence"], description = ["Internal RPC endpoint for the PersistenceWorker"], required = true)
-    var persistenceWorkerEndpoint: String? = null
-
-    @Option(names = ["--worker-endpoint-uniqueness"], description = ["Internal RPC endpoint for the UniquenessWorker"], required = true)
-    var uniquenessWorkerEndpoint: String? = null
 }
