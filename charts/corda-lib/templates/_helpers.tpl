@@ -620,7 +620,6 @@ The port which should be used to connect to Corda worker instances
 */}}
 {{- define "corda.workerServicePort" -}}
 7000
-
 {{- end -}}
 
 {{/*
