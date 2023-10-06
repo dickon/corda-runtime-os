@@ -3,10 +3,6 @@ package net.corda.applications.workers.workercommon
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
-import java.io.InputStream
-import java.lang.management.ManagementFactory
-import kotlin.math.absoluteValue
-import kotlin.random.Random
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -22,6 +18,10 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.InputStream
+import java.lang.management.ManagementFactory
+import kotlin.math.absoluteValue
+import kotlin.random.Random
 
 enum class BusType {
     KAFKA,
