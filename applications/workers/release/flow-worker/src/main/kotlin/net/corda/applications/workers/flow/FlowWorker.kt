@@ -17,6 +17,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.FlowProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
 import net.corda.web.api.WebServer
@@ -78,7 +79,7 @@ class FlowWorker @Activate constructor(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(WorkerHelpers.createConfigFromParams("worker", params.workerEndpoints))
+            listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints))
         )
 
         flowProcessor.start(config)

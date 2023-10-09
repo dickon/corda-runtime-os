@@ -18,6 +18,7 @@ import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("ForbiddenComment")
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
@@ -99,6 +100,7 @@ class RPCClient(
         }
     }
 
+    @Suppress("ForbiddenComment")
     // TODO This is placeholder exception handling
     private fun handleExceptions(e: Exception, deferred: CompletableDeferred<MediatorMessage<*>?>) {
         when (e) {
